@@ -59,9 +59,9 @@ func (c *mctrl) echo(s []string) {
 		log.Error(err)
 		return
 	}
-	log.Infof("echo:%v", results)
+	log.Infof("echo:%+v", results)
 }
 
 func (c *mctrl) workers(s []string) {
-	log.Infof("workers:%v", (*biz.MasterController)(c).WorkerAddrs())
+	log.Infof("workers:%+v", (*biz.MasterController)(c).WorkerAddrs())
 }

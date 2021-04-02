@@ -63,6 +63,7 @@ func (m *Master) serve(l net.Listener) {
 }
 
 func (m *Master) handleIncomingConn(c net.Conn) {
+	log.Debugf("new conn incoming: %s", c.RemoteAddr().String())
 	cli := rpc.NewClient(c)
 	item := &workerItem{
 		addr:   c.RemoteAddr().String(),

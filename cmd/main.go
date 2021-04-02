@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
 
 	"github.com/Water-W/PVP/pkg/biz"
 	pvplog "github.com/Water-W/PVP/pkg/log"
@@ -19,10 +21,16 @@ var (
 
 	// worker args
 	masterIP = flag.String("m", "", "connects to master with ip:port")
+
+	// log level
+	loggerLevel = flag.String("L", "info", "logger level")
 )
 
 func main() {
 	flag.Parse()
+
+	setLoggerLevel()
+
 	if *masterIP == "" {
 		master()
 	} else {
@@ -42,15 +50,19 @@ func master() {
 		log.Error(err)
 		return
 	}
-	if *interactive {
-		cli(ctrl)
+	if !*interactive || *httpPort == 1 {
+		log.Error("no cli and http flag is given. exiting.")
 		return
+	}
+	if *interactive {
+		go cli(ctrl)
 	}
 	if *httpPort != -1 {
-		http(ctrl)
-		return
+		go http(ctrl)
 	}
-	log.Error("no cli and http flag is given. exiting.")
+	intCh := make(chan os.Signal, 1)
+	signal.Notify(intCh, os.Interrupt)
+	<-intCh
 }
 
 /*===========================================================================*/
@@ -74,4 +86,11 @@ func worker() {
 func registerService(w *net.Worker) {
 	w.RegisterName(echo.ServiceName, &echo.Service{})
 	// TODO
+}
+
+/*===========================================================================*/
+func setLoggerLevel() {
+
+	pvplog.SetLoggerLevel(*loggerLevel)
+
 }
