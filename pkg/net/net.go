@@ -1,16 +1,22 @@
 package net
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/rpc"
 	"reflect"
 	"sync"
+	"time"
 
 	pvplog "github.com/Water-W/PVP/pkg/log"
 )
 
-var log = pvplog.Get("net")
+var (
+	log = pvplog.Get("net")
+)
+
+var Timeout = 10 * time.Second
 
 type Master struct {
 	ln      net.Listener
@@ -85,20 +91,63 @@ func (m *Master) all() []*workerItem {
 }
 
 func (m *Master) ForAll(methodName string, args interface{}, reply interface{}) (<-chan RpcCall, error) {
+	tctx, _ := context.WithTimeout(context.Background(), Timeout)
+	return m.forAll(tctx, methodName, args, reply)
+}
+
+func (m *Master) forAll(
+	ctx context.Context,
+	methodName string,
+	args interface{},
+	reply interface{},
+) (<-chan RpcCall, error) {
 	items := m.all()
 	out := make(chan RpcCall, len(items))
 	// create an reply for each call
 	dups := makeZeroValueDuplicates(reply, len(items))
+	cctx, cc := context.WithCancel(ctx)
+	var wg sync.WaitGroup
+	wg.Add(len(items))
 	for i, item := range items {
-		go func(item *workerItem, dupReply interface{}) {
+		go func(ctx context.Context, item *workerItem, dupReply interface{}) {
+			defer wg.Done() //
 			// call it and wait until it is done
-			call := <-item.client.Go(methodName, args, dupReply, nil).Done
+			var call *rpc.Call
+			select {
+			case call = <-item.client.Go(methodName, args, dupReply, nil).Done:
+				log.Debugf("%s:rpc done", item.addr)
+			case <-ctx.Done():
+				return
+			}
 			m.checkRpcCall(call)
 			out <- RpcCall{
 				Addr: item.addr,
 				Call: call,
 			}
-		}(item, dups[i])
+		}(cctx, item, dups[i])
+	}
+	// wait for all rpc are done, and then close channel
+	go func(wg *sync.WaitGroup) {
+		wg.Wait()
+		cc()
+		close(out)
+	}(&wg)
+	return out, nil
+}
+
+func (m *Master) ForAllSync(
+	ctx context.Context,
+	methodName string,
+	args interface{},
+	reply interface{},
+) ([]RpcCall, error) {
+	callCh, err := m.forAll(ctx, methodName, args, reply)
+	if err != nil {
+		return []RpcCall{}, err
+	}
+	out := make([]RpcCall, 0, len(callCh))
+	for call := range callCh {
+		out = append(out, call)
 	}
 	return out, nil
 }
@@ -154,4 +203,8 @@ func (w *Worker) Connect(masterAddr string) error {
 
 func (w *Worker) Register(service interface{}) error {
 	return w.s.Register(service)
+}
+
+func (w *Worker) RegisterName(name string, service interface{}) error {
+	return w.s.RegisterName(name, service)
 }
