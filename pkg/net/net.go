@@ -74,11 +74,11 @@ func (m *Master) handleIncomingConn(c net.Conn) {
 	m.workers[item.addr] = item
 }
 
-func (m *Master) handleDelAddr(addr string) {
-	m.rw.Lock()
-	defer m.rw.Unlock()
-	delete(m.workers, addr)
-}
+// func (m *Master) handleDelAddr(addr string) {
+// 	m.rw.Lock()
+// 	defer m.rw.Unlock()
+// 	delete(m.workers, addr)
+// }
 
 func (m *Master) all() []*workerItem {
 	m.rw.RLock()
@@ -150,6 +150,15 @@ func (m *Master) ForAllSync(
 		out = append(out, call)
 	}
 	return out, nil
+}
+
+func (m *Master) WorkerAddrs() []string {
+	ws := m.all()
+	out := make([]string, len(ws))
+	for i := range ws {
+		out[i] = ws[i].addr
+	}
+	return out
 }
 
 // checkRpcCall checks rpc and update workerItems.
