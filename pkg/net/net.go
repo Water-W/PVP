@@ -1,7 +1,6 @@
 package net
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/rpc"
@@ -14,9 +13,9 @@ import (
 var log = pvplog.Get("net")
 
 type Master struct {
+	ln      net.Listener
 	rw      sync.RWMutex
 	workers map[string]*workerItem
-	cancel  func()
 }
 
 func NewMaster() (*Master, error) {
@@ -26,7 +25,7 @@ func NewMaster() (*Master, error) {
 	}, nil
 }
 
-func (m *Master) listen(port int) error {
+func (m *Master) Listen(port int) error {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("0.0.0.0:%d", port))
 	if err != nil {
 		return err
@@ -35,23 +34,23 @@ func (m *Master) listen(port int) error {
 	if err != nil {
 		return err
 	}
-	cctx, cc := context.WithCancel(context.Background())
-	m.cancel = cc
-	go m.serve(cctx, ln)
+	go m.serve(ln)
 	return nil
 }
 
-func (m *Master) serve(ctx context.Context, l net.Listener) {
+func (m *Master) Close() error {
+	if m.ln != nil {
+		return m.ln.Close()
+	}
+	return nil
+}
+
+func (m *Master) serve(l net.Listener) {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			log.Error(err)
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-			continue
+			return
 		}
 		m.handleIncomingConn(conn)
 	}
@@ -94,6 +93,7 @@ func (m *Master) ForAll(methodName string, args interface{}, reply interface{}) 
 		go func(item *workerItem, dupReply interface{}) {
 			// call it and wait until it is done
 			call := <-item.client.Go(methodName, args, dupReply, nil).Done
+			m.checkRpcCall(call)
 			out <- RpcCall{
 				Addr: item.addr,
 				Call: call,
@@ -101,6 +101,13 @@ func (m *Master) ForAll(methodName string, args interface{}, reply interface{}) 
 		}(item, dups[i])
 	}
 	return out, nil
+}
+
+// checkRpcCall checks rpc and update workerItems.
+// It handles the situation that some workers are unavailable.
+// It can be safiticated if you consider tons of situations.
+func (m *Master) checkRpcCall(c *rpc.Call) {
+	// TODO
 }
 
 type workerItem struct {
@@ -140,6 +147,7 @@ func (w *Worker) Connect(masterAddr string) error {
 	if err != nil {
 		return err
 	}
+	log.Infof("connected to %s", masterAddr)
 	w.s.ServeConn(conn)
 	return nil
 }
