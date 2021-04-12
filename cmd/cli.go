@@ -2,11 +2,31 @@ package main
 
 import (
 	"context"
+	"os"
 	"regexp"
 
 	"github.com/Water-W/PVP/pkg/biz"
 	"github.com/c-bata/go-prompt"
 )
+
+var suggestions = []prompt.Suggest{
+	{
+		Text:        "workers",
+		Description: "show worker infos",
+	},
+	{
+		Text:        "dump",
+		Description: "dump node and links info",
+	},
+	{
+		Text:        "echo",
+		Description: "use echo service",
+	},
+	{
+		Text:        "exit",
+		Description: "exit pvp",
+	},
+}
 
 func cli(ctrl *biz.MasterController) {
 	mctrl := (*mctrl)(ctrl)
@@ -17,8 +37,18 @@ func cli(ctrl *biz.MasterController) {
 				Action:  mctrl.echo,
 			},
 			{
+				Pattern: `dump`,
+				Action:  mctrl.dump,
+			},
+			{
 				Pattern: "workers",
 				Action:  mctrl.workers,
+			},
+			{
+				Pattern: "exit",
+				Action: func([]string) {
+					os.Exit(0)
+				},
 			},
 		},
 	}
@@ -34,21 +64,23 @@ type Cmd struct {
 	Action  func([]string)
 }
 
-func (c *CLI) Run() {
-	noopCompleter := func(d prompt.Document) []prompt.Suggest {
-		return []prompt.Suggest{}
-	}
-	for {
-		input := prompt.Input("> ", noopCompleter)
-		for _, cmd := range c.cmds {
-			re := regexp.MustCompile(cmd.Pattern)
-			matches := re.FindStringSubmatch(input)
-			if matches == nil {
-				continue
-			}
-			cmd.Action(matches)
+func (c *CLI) exec(input string) {
+	for _, cmd := range c.cmds {
+		re := regexp.MustCompile(cmd.Pattern)
+		matches := re.FindStringSubmatch(input)
+		if matches == nil {
+			continue
 		}
+		cmd.Action(matches)
 	}
+}
+
+func (c *CLI) Run() {
+	completer := func(d prompt.Document) []prompt.Suggest {
+		return prompt.FilterHasPrefix(suggestions, d.GetWordBeforeCursor(), false)
+	}
+	p := prompt.New(c.exec, completer)
+	p.Run()
 }
 
 type mctrl biz.MasterController
@@ -60,6 +92,15 @@ func (c *mctrl) echo(s []string) {
 		return
 	}
 	log.Infof("echo:%+v", results)
+}
+
+func (c *mctrl) dump(s []string) {
+	results, err := (*biz.MasterController)(c).Dump(context.Background())
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Infof("dump:%+v", results)
 }
 
 func (c *mctrl) workers(s []string) {

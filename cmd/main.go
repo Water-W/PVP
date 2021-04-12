@@ -46,7 +46,7 @@ func master() {
 		return
 	}
 
-	if !*interactive || *httpPort == -1 {
+	if !*interactive && *httpPort == -1 {
 		log.Error("no cli and http flag is given. exiting.")
 		return
 	}
