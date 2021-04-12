@@ -1,28 +1,26 @@
 package dump
 
-type LinkMetrics interface {
-	Links() []string
-	// LinkMetric returns a gob-serializable interface{}
-	LinkMetric(s string) (interface{}, error)
+type LinkMeasurer interface {
+	GetLinks() (map[string]interface{}, error)
 }
-type NodeMetrics interface {
-	// NodeMetric returns a gob-serializable interface{}
-	NodeMetric() (interface{}, error)
+type NodeMeasurer interface {
+	// GetNode returns a gob-serializable interface{}
+	GetNode() (interface{}, error)
 }
 
 var ServiceName = "dump"
 
 // Service .
 type Service struct {
-	nm NodeMetrics
-	lm LinkMetrics
+	nm NodeMeasurer
+	lm LinkMeasurer
 }
 
-func (s *Service) RegisterNodeMetrics(nm NodeMetrics) {
+func (s *Service) RegisterNodeMeasurer(nm NodeMeasurer) {
 	s.nm = nm
 }
 
-func (s *Service) RegisterLinkMetrics(lm LinkMetrics) {
+func (s *Service) RegisterLinkMeasurer(lm LinkMeasurer) {
 	s.lm = lm
 }
 
@@ -32,7 +30,7 @@ type NodeReply struct {
 }
 
 func (s *Service) DumpNodes(args NodeArgs, reply *NodeReply) (err error) {
-	reply.NodeData, err = s.nm.NodeMetric()
+	reply.NodeData, err = s.nm.GetNode()
 	if err != nil {
 		return err
 	}
@@ -45,13 +43,9 @@ type LinkReply struct {
 }
 
 func (s *Service) DumpLinks(args LinkArgs, reply *LinkReply) (err error) {
-	links := s.lm.Links()
-	data := make(map[string]interface{}, len(links))
-	for _, link := range links {
-		data[link], err = s.lm.LinkMetric(link)
-		if err != nil {
-			return err
-		}
+	reply.LinkData, err = s.lm.GetLinks()
+	if err != nil {
+		return err
 	}
 	return nil
 }
