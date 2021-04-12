@@ -70,14 +70,15 @@ func worker() {
 		NodeQuery:  `{ID}`,
 		LinksQuery: `Peers`,
 	}
-	_, err := biz.NewWorkerController(c)
+	wc, err := biz.NewWorkerController(c)
 	if err != nil {
 		log.Errorf("new worker controller err:%v", err)
 		return
 	}
-	intCh := make(chan os.Signal, 1)
-	signal.Notify(intCh, os.Interrupt)
-	<-intCh
+	err = wc.ConnectAndServe()
+	if err != nil {
+		log.Errorf("connect and serve: err:%v", err)
+	}
 }
 
 /*===========================================================================*/

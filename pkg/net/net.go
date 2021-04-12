@@ -201,7 +201,7 @@ func NewWorker() (*Worker, error) {
 	}, nil
 }
 
-func (w *Worker) Connect(masterAddr string) error {
+func (w *Worker) ConnectAndServe(masterAddr string) error {
 	conn, err := net.Dial("tcp", masterAddr)
 	if err != nil {
 		return err
