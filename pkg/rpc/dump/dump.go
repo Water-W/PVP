@@ -8,6 +8,11 @@ type NodeMeasurer interface {
 	GetNode() (interface{}, error)
 }
 
+type Measurer interface {
+	LinkMeasurer
+	NodeMeasurer
+}
+
 var ServiceName = "dump"
 
 // Service .
@@ -22,6 +27,11 @@ func (s *Service) RegisterNodeMeasurer(nm NodeMeasurer) {
 
 func (s *Service) RegisterLinkMeasurer(lm LinkMeasurer) {
 	s.lm = lm
+}
+
+func (s *Service) RegisterMeasurer(m Measurer) {
+	s.nm = m
+	s.lm = m
 }
 
 type NodeArgs struct{}
