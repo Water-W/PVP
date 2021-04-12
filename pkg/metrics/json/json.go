@@ -10,38 +10,38 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-var _ dump.NodeMeasurer = (*JsonMeasurer)(nil)
-var _ dump.LinkMeasurer = (*JsonMeasurer)(nil)
+var _ dump.NodeMeasurer = (*Measurer)(nil)
+var _ dump.LinkMeasurer = (*Measurer)(nil)
 
 // a measurer using https://github.com/tidwall/gjson to parse json
-type JsonMeasurer struct {
-	source  metrics.Source
-	nodeQL  string
-	linksQL string
+type Measurer struct {
+	source     metrics.Source
+	nodeQuery  string
+	linksQuery string
 }
 
-func (m *JsonMeasurer) SetSource(s metrics.Source) {
+func (m *Measurer) SetSource(s metrics.Source) {
 	m.source = s
 }
 
-func (m *JsonMeasurer) SetNodeQL(query string) {
-	m.nodeQL = query
+func (m *Measurer) SetNodeQuery(query string) {
+	m.nodeQuery = query
 }
 
-func (m *JsonMeasurer) SetLinksQL(query string) {
-	m.linksQL = query
+func (m *Measurer) SetLinksQuery(query string) {
+	m.linksQuery = query
 }
 
-func (m *JsonMeasurer) GetNode() (interface{}, error) {
-	return m.get(m.nodeQL)
+func (m *Measurer) GetNode() (interface{}, error) {
+	return m.get(m.nodeQuery)
 }
 
-func (m *JsonMeasurer) GetLinks() (map[string]interface{}, error) {
-	out, err := m.get(m.linksQL)
+func (m *Measurer) GetLinks() (map[string]interface{}, error) {
+	out, err := m.get(m.linksQuery)
 	return out.(map[string]interface{}), err
 }
 
-func (m *JsonMeasurer) get(query string) (interface{}, error) {
+func (m *Measurer) get(query string) (interface{}, error) {
 	bin, err := ioutil.ReadAll(m.source.Source())
 	if err != nil {
 		return nil, err

@@ -7,19 +7,19 @@ import (
 	"github.com/Water-W/PVP/pkg/metrics"
 )
 
-var _ metrics.Source = (*HTTPSource)(nil)
+var _ metrics.Source = (*Source)(nil)
 
-type HTTPSource struct {
+type Source struct {
 	url string
 }
 
-func NewHTTPSource(url string) *HTTPSource {
-	return &HTTPSource{
+func NewSource(url string) *Source {
+	return &Source{
 		url: url,
 	}
 }
 
-func (h *HTTPSource) Source() io.Reader {
+func (h *Source) Source() io.Reader {
 	resp, err := http.Get(h.url) //using http.default client
 	return &ErrReader{
 		Reader: resp.Body,

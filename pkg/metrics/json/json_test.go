@@ -180,10 +180,10 @@ func TestJsonMeasurer(t *testing.T) {
 		},
 	}
 
-	j := &JsonMeasurer{
-		source:  &mockSource{},
-		nodeQL:  `{ID}`,
-		linksQL: `Peers`,
+	j := &Measurer{
+		source:     &mockSource{},
+		nodeQuery:  `{ID}`,
+		linksQuery: `Peers`,
 	}
 
 	actNode, err := j.GetNode()
