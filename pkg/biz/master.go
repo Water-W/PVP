@@ -2,6 +2,7 @@ package biz
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Water-W/PVP/pkg/log"
 	"github.com/Water-W/PVP/pkg/net"
@@ -37,6 +38,8 @@ func NewMasterController(c *MasterConfig) (*MasterController, error) {
 	}, nil
 }
 
+/*===========================================================================*/
+
 type EchoResult struct {
 	From   string
 	Result string
@@ -61,13 +64,15 @@ func (m *MasterController) Echo(ctx context.Context, s string) ([]EchoResult, er
 	return out, err
 }
 
-func (m *MasterController) WorkerAddrs() []string {
-	return m.nm.WorkerAddrs()
-}
+/*===========================================================================*/
 
 type DumpResult struct {
 	From  string
 	Reply *dump.Reply
+}
+
+func (d DumpResult) String() string {
+	return fmt.Sprintf("{from:%s, Reply:%+v}", d.From, d.Reply)
 }
 
 func (m *MasterController) Dump(ctx context.Context) ([]DumpResult, error) {
@@ -85,4 +90,10 @@ func (m *MasterController) Dump(ctx context.Context) ([]DumpResult, error) {
 		}
 	}
 	return out, err
+}
+
+/*===========================================================================*/
+
+func (m *MasterController) WorkerAddrs() []string {
+	return m.nm.WorkerAddrs()
 }
