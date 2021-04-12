@@ -34,26 +34,18 @@ func (s *Service) RegisterMeasurer(m Measurer) {
 	s.lm = m
 }
 
-type NodeArgs struct{}
-type NodeReply struct {
-	NodeData interface{}
+type Args struct{}
+type Reply struct {
+	Node  interface{}
+	Links map[string]interface{}
 }
 
-func (s *Service) DumpNodes(args NodeArgs, reply *NodeReply) (err error) {
-	reply.NodeData, err = s.nm.GetNode()
+func (s *Service) Dump(args Args, reply *Reply) (err error) {
+	reply.Node, err = s.nm.GetNode()
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-type LinkArgs struct{}
-type LinkReply struct {
-	LinkData map[string]interface{}
-}
-
-func (s *Service) DumpLinks(args LinkArgs, reply *LinkReply) (err error) {
-	reply.LinkData, err = s.lm.GetLinks()
+	reply.Links, err = s.lm.GetLinks()
 	if err != nil {
 		return err
 	}

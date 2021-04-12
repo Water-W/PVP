@@ -5,6 +5,7 @@ import (
 
 	"github.com/Water-W/PVP/pkg/log"
 	"github.com/Water-W/PVP/pkg/net"
+	"github.com/Water-W/PVP/pkg/rpc/dump"
 	"github.com/Water-W/PVP/pkg/rpc/echo"
 )
 
@@ -62,4 +63,26 @@ func (m *MasterController) Echo(ctx context.Context, s string) ([]EchoResult, er
 
 func (m *MasterController) WorkerAddrs() []string {
 	return m.nm.WorkerAddrs()
+}
+
+type DumpResult struct {
+	From  string
+	Reply *dump.Reply
+}
+
+func (m *MasterController) Dump(ctx context.Context) ([]DumpResult, error) {
+	calls, err := m.nm.ForAllSync(
+		ctx,
+		dump.ServiceName+".Dump",
+		dump.Args{},
+		&dump.Reply{},
+	)
+	out := make([]DumpResult, len(calls))
+	for i := range calls {
+		out[i] = DumpResult{
+			From:  calls[i].Addr,
+			Reply: calls[i].Reply.(*dump.Reply),
+		}
+	}
+	return out, err
 }
