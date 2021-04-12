@@ -7,8 +7,6 @@ import (
 
 	"github.com/Water-W/PVP/pkg/biz"
 	pvplog "github.com/Water-W/PVP/pkg/log"
-	"github.com/Water-W/PVP/pkg/net"
-	"github.com/Water-W/PVP/pkg/rpc/echo"
 )
 
 var (
@@ -39,18 +37,16 @@ func main() {
 }
 
 func master() {
-	m, err := net.NewMaster()
+	c := &biz.MasterConfig{
+		ListenPort: *listenPort,
+	}
+	ctrl, err := biz.NewMasterController(c)
 	if err != nil {
-		log.Error(err)
+		log.Error("new master controller err:%v", err)
 		return
 	}
-	ctrl := biz.NewMasterController(m)
-	err = m.Listen(*listenPort)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	if !*interactive || *httpPort == 1 {
+
+	if !*interactive || *httpPort == -1 {
 		log.Error("no cli and http flag is given. exiting.")
 		return
 	}
@@ -68,24 +64,20 @@ func master() {
 /*===========================================================================*/
 
 func worker() {
-	w, err := net.NewWorker()
+	c := &biz.WorkerConfig{
+		MasterAddr: *masterIP,
+		URL:        "http://127.0.0.1:2404/report",
+		NodeQuery:  `{ID}`,
+		LinksQuery: `Peers`,
+	}
+	_, err := biz.NewWorkerController(c)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("new worker controller err:%v", err)
 		return
 	}
-	registerService(w)
-	err = w.Connect(*masterIP)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	// block forever
-	select {}
-}
-
-func registerService(w *net.Worker) {
-	w.RegisterName(echo.ServiceName, &echo.Service{})
-	// TODO
+	intCh := make(chan os.Signal, 1)
+	signal.Notify(intCh, os.Interrupt)
+	<-intCh
 }
 
 /*===========================================================================*/

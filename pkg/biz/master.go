@@ -3,9 +3,16 @@ package biz
 import (
 	"context"
 
+	"github.com/Water-W/PVP/pkg/log"
 	"github.com/Water-W/PVP/pkg/net"
 	"github.com/Water-W/PVP/pkg/rpc/echo"
 )
+
+var logger = log.Get("ctrl")
+
+type MasterConfig struct {
+	ListenPort int
+}
 
 // biz.MasterController provides serveral control methods
 // for master user to call rpc and view network.
@@ -13,10 +20,20 @@ type MasterController struct {
 	nm *net.Master
 }
 
-func NewMasterController(nm *net.Master) *MasterController {
+func NewMasterController(c *MasterConfig) (*MasterController, error) {
+	nm, err := net.NewMaster()
+	if err != nil {
+		logger.Error(err)
+		return nil, err
+	}
+	err = nm.Listen(c.ListenPort)
+	if err != nil {
+		logger.Error(err)
+		return nil, err
+	}
 	return &MasterController{
 		nm: nm,
-	}
+	}, nil
 }
 
 type EchoResult struct {
