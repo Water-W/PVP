@@ -38,7 +38,14 @@ func (m *Measurer) GetNode() (interface{}, error) {
 
 func (m *Measurer) GetLinks() (map[string]interface{}, error) {
 	out, err := m.get(m.linksQuery)
-	return out.(map[string]interface{}), err
+	if err != nil {
+		return map[string]interface{}{}, err
+	}
+	links, ok := out.(map[string]interface{})
+	if !ok {
+		return map[string]interface{}{}, fmt.Errorf("links is not a json object")
+	}
+	return links, err
 }
 
 func (m *Measurer) get(query string) (interface{}, error) {
