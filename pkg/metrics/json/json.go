@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	pvplog "github.com/Water-W/PVP/pkg/log"
 	"github.com/Water-W/PVP/pkg/metrics"
 
 	"github.com/Water-W/PVP/pkg/rpc/dump"
@@ -12,6 +13,7 @@ import (
 
 var _ dump.NodeMeasurer = (*Measurer)(nil)
 var _ dump.LinkMeasurer = (*Measurer)(nil)
+var log = pvplog.Get("json-measurer")
 
 // a measurer using https://github.com/tidwall/gjson to parse json
 type Measurer struct {
@@ -56,9 +58,11 @@ func (m *Measurer) get(query string) (interface{}, error) {
 	if !gjson.ValidBytes(bin) {
 		return nil, fmt.Errorf("invalid json")
 	}
+
 	res := gjson.GetBytes(bin, query)
-	if !res.IsObject() {
-		return nil, fmt.Errorf("parse error")
+	if !res.Exists() {
+		log.Infof("result not exist: json=%s, query=%s", string(bin), query)
+		return nil, fmt.Errorf("result not exist: json=%s, query=%s", string(bin), query)
 	}
 	return res.Value(), nil
 }

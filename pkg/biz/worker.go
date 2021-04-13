@@ -33,6 +33,7 @@ func NewWorkerController(c *WorkerConfig) (*WorkerController, error) {
 	jm := &json.Measurer{}
 	jm.SetSource(hs)
 	jm.SetNodeQuery(c.NodeQuery)
+	jm.SetLinksQuery(c.LinksQuery)
 
 	ds := &dump.Service{}
 	ds.RegisterMeasurer(jm)
