@@ -54,7 +54,7 @@ func master() {
 		go cli(ctrl)
 	}
 	if *httpPort != -1 {
-		go http(ctrl)
+		go myhttp(ctrl)
 	}
 	intCh := make(chan os.Signal, 1)
 	signal.Notify(intCh, os.Interrupt)
