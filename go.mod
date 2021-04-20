@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/kr/pretty v0.2.0 // indirect
+	github.com/pelletier/go-toml v1.9.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/gjson v1.7.4
