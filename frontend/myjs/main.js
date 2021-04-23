@@ -1,6 +1,9 @@
 // Configure graphics
-var width = $(window).width(),
-    height = $(window).height();
+var width = $("#graphic").width(),
+    height = $("#graphic").height();
+
+console.log(width, height);
+
 
 var circleWidth = 5,
     charge = -75 * 0.6,
@@ -116,7 +119,6 @@ function dealdata(netdata) {
         return
     }
     console.log("dump有数据。")
-
     for (var i = 0; i < netdata.length; i++) {
         var name_link = Object.keys(netdata[i].Reply.Links)
         let targetAry = [];
@@ -124,7 +126,7 @@ function dealdata(netdata) {
         var thislink = netdata[i].Reply.Links
         var thisnodename = netdata[i].Reply.Node.ID
         var x = pushNode(thisnodename)
-        
+
         if (x) {
             thisnodeid = x
         } else {
@@ -140,6 +142,7 @@ function dealdata(netdata) {
                 mynode.push({
                     id: nodeNum - 1,
                     name: name_link[j],
+                    target: []
                 })
                 targetAry.push(nodeNum)
             } else {
@@ -167,18 +170,18 @@ function dealdata(netdata) {
 }
 
 geturl()
-console.log(nodes)
-console.log(links)
+// console.log(nodes)
+// console.log(links)
 
 
 nodes = mynode
 links = mylink
+numNodes = nodeNum
 
 // Create SVG
-var fdGraph = d3.select('#graphic')
-    .append('svg')
-    .attr('width', 0.8 * width)
-    .attr('height', 0.8 * height)
+var fdGraph = d3.select('#graphic svg');
+    // .attr('width', 0.8 * width)
+    // .attr('height', 0.8 * height)
 
 // Create the force layout to calculate and animate node spacing
 var forceLayout = d3.layout.force()
@@ -191,7 +194,14 @@ var forceLayout = d3.layout.force()
 // Create the SVG lines for the links
 var link = fdGraph
     .selectAll('line').data(links).enter()
-    .append('line')
+    .append('g')
+
+
+link.append('line')
+    .attr('x1', function (d) { return d.source.x })
+    .attr('y1', function (d) { return d.source.y })
+    .attr('x2', function (d) { return d.target.x })
+    .attr('y2', function (d) { return d.target.y })
     .attr('stroke', palette.gray)
     .attr('stroke-width', 1)
     .attr('class', function (d, i) {
@@ -203,6 +213,20 @@ var link = fdGraph
         // line_1 line to_2 (ps:这里表示分别属于三个类，line1、line、to_2)
         return theClass
     })
+    .on('mouseout', function (d) {
+        d3.select(this).selectAll('text')
+            .attr('font-size', '12')
+            .attr('font-weight', 'normal')
+        console.log('移动出line上')
+    })
+    .on('mouseover', function (d) {
+        console.log(this)
+        d3.select(this).selectAll('text')
+            .attr('font-size', '16')
+            .attr('font-weight', 'normal')
+        console.log('移动到line')
+    })
+
 
 // Create the SVG groups for the nodes and their labels
 var node = fdGraph
@@ -211,6 +235,7 @@ var node = fdGraph
     .attr('id', function (d) { return 'node_' + d.id })
     .attr('class', 'node')
     .on('mouseover', function (d) {
+        console.log(this)
         // When mousing over a node, make the label bigger and bold
         // and revert any previously enlarged text to normal
         if (lock_click === 1) return
@@ -300,6 +325,7 @@ var node = fdGraph
             .attr('font-weight', 'bold')
     })
     .call(forceLayout.drag)
+    .call(forceLayout.)
 
 // Create the SVG circles for the nodes
 node.append('circle')
@@ -325,10 +351,22 @@ node.append('circle')
 // Create the SVG text to label the nodes
 node.append('text')
     .text(function (d) {
-        return d.name
+        return d.name.slice(0, 3) + "***" + d.name.slice(-3)
     })
     .attr('font-size', '12')
 
+link.append('text')
+    .text(function (d) {
+        return "123123"
+        //strconv.Itoa(TotalIn) + strconv.Itoa(TotalOut)
+    })
+    .attr('font-size', '12')
+    .attr('x', function(d){return (d.x1+d.x2)/2})
+    .attr('y', function(d){return (d.y1+d.y2)/2})
+
+
+var nihao = true
+var nihaonihao = 0
 // Animate the layout every time tick
 forceLayout.on('tick', function (e) {
     // Move the nodes base on charge and gravity
@@ -336,9 +374,8 @@ forceLayout.on('tick', function (e) {
         return 'translate(' + d.x + ', ' + d.y + ')'
     })
 
-
     // Adjust the lines to the new node positions
-    link
+    link.selectAll('line')
         .attr('x1', function (d) {
             return d.source.x
         })
@@ -346,6 +383,12 @@ forceLayout.on('tick', function (e) {
             return d.source.y
         })
         .attr('x2', function (d) {
+            if (nihao) {
+                console.log(d.target.x)
+                nihaonihao++
+                if (nihaonihao === 4)
+                    nihao = false
+            }
             if (d.target !== undefined) {
                 return d.target.x
             } else {

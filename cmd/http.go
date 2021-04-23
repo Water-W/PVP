@@ -64,6 +64,6 @@ func myhttp(ctrl *biz.MasterController) {
 
 	//启动静态文件服务,可以访问localhosta:8080/frontend/main.html来查看
 	http.Handle("/", http.FileServer(http.Dir("../")))
-	log.Infof("123132%v", strconv.Itoa(*httpPort))
+	
 	http.ListenAndServe(":"+strconv.Itoa(*httpPort), nil)
 }

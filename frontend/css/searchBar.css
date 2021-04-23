@@ -1,0 +1,40 @@
+
+/* 搜索框样式 */
+.searchBox{
+    width: 40%;
+    height: 35px;
+    border: 1px solid cadetblue;
+    outline: hidden;
+    border-radius: 2px;
+    margin: 0 auto;
+    position: relative;
+  }
+  
+  .inputBox{
+    border: none;
+    width: 84%;
+    height: 35px;
+    line-height: 35px;
+    outline: none;
+    padding-left: 10px;
+    /* 改变光标的颜色 */
+    caret-color:#008B8B;
+    font-size: 14px;
+  }
+  
+  .searchBtn{
+    width: 65px;
+    height: 35px;
+    border: none;
+    position: absolute;
+    right: 0;
+    outline: none;
+    color: white;
+    font-size: 15px;
+    background-color: rgb(100, 149, 237);
+  }
+  
+  /* 鼠标滑过按钮时背景色改变 */
+  .searchBtn:hover{
+    background-color: #497fdf;
+  }

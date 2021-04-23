@@ -13,13 +13,14 @@ var (
 	log = pvplog.Get("main")
 
 	// master args
-	listenPort  = flag.Int("l", 8000, "master listening port")
-	httpPort    = flag.Int("p", 1234, "visual html's http port")
+	listenPort  = flag.Int("l", 18000, "master listening port")
+	httpPort    = flag.Int("p", 18010, "visual html's http port")
 	interactive = flag.Bool("i", true, "start a simple cli for master")
 
 	// worker args
 	masterIP = flag.String("m", "", "connects to master with ip:port")
-	datahttp = flag.String("w","39.104.200.8:2404", "the network ip:port work connect to")
+	//127.0.0.1:
+	datahttp = flag.String("w", "http://39.104.200.8:2404/report", "the network ip:port work connect to")
 
 	// log level
 	loggerLevel = flag.String("L", "info", "logger level")
@@ -67,7 +68,7 @@ func master() {
 func worker() {
 	c := &biz.WorkerConfig{
 		MasterAddr: *masterIP,
-		URL:        "http://"+*datahttp+"/report",
+		URL:        *datahttp,
 		NodeQuery:  `{ID}`,
 		LinksQuery: `Peers`,
 	}
