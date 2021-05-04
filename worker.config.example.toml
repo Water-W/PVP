@@ -1,0 +1,13 @@
+MyAddress = "127.0.0.1:6000
+IsMaster = false
+[Master]
+  Address = "127.0.0.1:8000"
+  HTTPPort = 8001
+[Worker]
+  Address = [
+      "127.0.0.1:6000",
+      "127.0.0.1:6001"
+  ]
+  LinkQuery = "Peers"
+  NodeQuery = "{ID}"
+  URL = "http://127.0.0.1:2404/report"
