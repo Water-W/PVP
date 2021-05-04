@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/Water-W/PVP/influxdb"
 	"github.com/Water-W/PVP/pkg/biz"
 	"github.com/c-bata/go-prompt"
 )
@@ -13,6 +14,10 @@ var suggestions = []prompt.Suggest{
 	{
 		Text:        "workers",
 		Description: "show worker infos",
+	},
+	{
+		Text:        "storepoint",
+		Description: "store the dump data to database",
 	},
 	{
 		Text:        "dump",
@@ -43,6 +48,10 @@ func cli(ctrl *biz.MasterController) {
 			{
 				Pattern: "workers",
 				Action:  mctrl.workers,
+			},
+			{
+				Pattern: "storepoint",
+				Action:  mctrl.storepoint,
 			},
 			{
 				Pattern: "exit",
@@ -105,4 +114,14 @@ func (c *mctrl) dump(s []string) {
 
 func (c *mctrl) workers(s []string) {
 	log.Infof("workers:%+v", (*biz.MasterController)(c).WorkerAddrs())
+}
+
+func (c *mctrl) storepoint(s []string) {
+	results, err := (*biz.MasterController)(c).Dump(context.Background())
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	influxdb.Storedata(results)
+	log.Infof("storepoint: finish")
 }

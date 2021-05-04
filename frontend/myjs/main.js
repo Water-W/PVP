@@ -1,9 +1,20 @@
-// Configure graphics
+// Configure graphics'
+
+
+infodict = {}
+
 var width = $("#graphic").width(),
     height = $("#graphic").height();
 
-console.log(width, height);
 
+const info = document.createElement("div");
+info.setAttribute("class", "info-panel");
+
+infopanel = d3.select(".info-panel")
+    .style("position", "fixed")
+
+
+console.log(width, height);
 
 var circleWidth = 5,
     charge = -75 * 0.6,
@@ -70,7 +81,8 @@ catch (e) {
 }
 
 function geturl() {
-    var url = "http://localhost:1234/dump";
+    //http://39.104.200.8:18010/dump
+    var url = "http://localhost:18010/dump";
     request.open("GET", url, false);
     request.send(null);
     var netdata1 = request.responseText
@@ -121,6 +133,7 @@ function dealdata(netdata) {
     console.log("dump有数据。")
     for (var i = 0; i < netdata.length; i++) {
         var name_link = Object.keys(netdata[i].Reply.Links)
+        console.log(name_link)
         let targetAry = [];
         var thisnodeid = nodeNum
         var thislink = netdata[i].Reply.Links
@@ -179,9 +192,9 @@ links = mylink
 numNodes = nodeNum
 
 // Create SVG
-var fdGraph = d3.select('#graphic svg');
-    // .attr('width', 0.8 * width)
-    // .attr('height', 0.8 * height)
+var fdGraph = d3.select('#graphic svg')
+// .attr('width', 0.8 * width)
+// .attr('height', 0.8 * height)
 
 // Create the force layout to calculate and animate node spacing
 var forceLayout = d3.layout.force()
@@ -193,7 +206,7 @@ var forceLayout = d3.layout.force()
 
 // Create the SVG lines for the links
 var link = fdGraph
-    .selectAll('line').data(links).enter()
+    .selectAll('g').data(links).enter()
     .append('g')
 
 
@@ -228,6 +241,16 @@ link.append('line')
     })
 
 
+function nodeClick() {
+    lock_click = 1;
+    console.log("click node")
+    // more Highlight the current node
+    // debugger
+    this.select('text')
+        .attr('font-size', '18')
+        .attr('font-weight', 'bold')
+}
+
 // Create the SVG groups for the nodes and their labels
 var node = fdGraph
     .selectAll('circle').data(nodes).enter()
@@ -235,7 +258,7 @@ var node = fdGraph
     .attr('id', function (d) { return 'node_' + d.id })
     .attr('class', 'node')
     .on('mouseover', function (d) {
-        console.log(this)
+        // console.log(this)
         // When mousing over a node, make the label bigger and bold
         // and revert any previously enlarged text to normal
         if (lock_click === 1) return
@@ -316,16 +339,8 @@ var node = fdGraph
         });
         forceLayout.start();
     })
-    .on("click", function (d, i) {
-        lock_click = 1;
-        console.log("click node")
-        // more Highlight the current node
-        d3.select(this).select('text')
-            .attr('font-size', '18')
-            .attr('font-weight', 'bold')
-    })
+    .on("click", () => (nodeClick.call(this)))
     .call(forceLayout.drag)
-    .call(forceLayout.)
 
 // Create the SVG circles for the nodes
 node.append('circle')
@@ -355,15 +370,19 @@ node.append('text')
     })
     .attr('font-size', '12')
 
-link.append('text')
-    .text(function (d) {
-        return "123123"
-        //strconv.Itoa(TotalIn) + strconv.Itoa(TotalOut)
+link
+    .append('text')
+    .attr('transform', function (d) {
+        console.log("222")
+        var a = d.source
+        console.log(a, d)
+        return `translate(` + 100 + ',' + 100 + ')'
     })
-    .attr('font-size', '12')
-    .attr('x', function(d){return (d.x1+d.x2)/2})
-    .attr('y', function(d){return (d.y1+d.y2)/2})
-
+    // .text(function (d) {
+    //     return "I am Text"
+    //     //strconv.Itoa(TotalIn) + strconv.Itoa(TotalOut)
+    // })
+    // .attr('font-size', '12')
 
 var nihao = true
 var nihaonihao = 0
@@ -374,6 +393,10 @@ forceLayout.on('tick', function (e) {
         return 'translate(' + d.x + ', ' + d.y + ')'
     })
 
+    // link.attr('transform', function (d, i) {
+    //     return 'translate(' + d.x + ', ' + d.y + ')'
+    // })
+
     // Adjust the lines to the new node positions
     link.selectAll('line')
         .attr('x1', function (d) {
@@ -383,12 +406,14 @@ forceLayout.on('tick', function (e) {
             return d.source.y
         })
         .attr('x2', function (d) {
-            if (nihao) {
+
+            if (false) {
                 console.log(d.target.x)
                 nihaonihao++
-                if (nihaonihao === 4)
+                if (nihaonihao === 1)
                     nihao = false
             }
+
             if (d.target !== undefined) {
                 return d.target.x
             } else {
@@ -436,9 +461,11 @@ $(document).click(function (e) {
 d3.select(".searchBtn")
     .on("click", function (e) {
         let ee = document.getElementById("okk").value;
-        console.log("#" + ee)
-        let x = document.getElementById("Node_1")// .dispatchEvent('mouseover');
-        console.log(x)
+        console.log(ee)
+        let el = document.querySelector("#node_" + ee + " circle")
+        nodeClick.call(d3.select(el))
+        // let x = document.getElementById("Node_1")// .dispatchEvent('mouseover');
+        // console.log(x)
     })
 
 d3.select('#graphic')

@@ -27,9 +27,6 @@ func (s *server) dump(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 		return
 	}
-	/*
-
-	 */
 	// 转换dump的结果为标准json
 	j, err := json.Marshal(request)
 	if err != nil {
