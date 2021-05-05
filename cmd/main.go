@@ -44,7 +44,7 @@ func master() {
 	}
 	ctrl, err := biz.NewMasterController(c)
 	if err != nil {
-		log.Error("new master controller err:%v", err)
+		log.Errorf("new master controller err:%v", err)
 		return
 	}
 
@@ -69,7 +69,7 @@ func worker() {
 	c := &biz.WorkerConfig{
 		MasterAddr: *masterIP,
 		URL:        *datahttp,
-		NodeQuery:  `{ID}`,
+		NodeQuery:  `{ID,Protocols}`,
 		LinksQuery: `Peers`,
 	}
 	wc, err := biz.NewWorkerController(c)
