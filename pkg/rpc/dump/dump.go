@@ -2,6 +2,7 @@ package dump
 
 import (
 	"encoding/gob"
+	"time"
 
 	"github.com/Water-W/PVP/pkg/log"
 )
@@ -51,6 +52,7 @@ type Reply struct {
 	Node       interface{}
 	Links      map[string]interface{}
 	ErrMessage string
+	Timestamp time.Time
 }
 
 func (s *Service) Dump(args Args, reply *Reply) (err error) {

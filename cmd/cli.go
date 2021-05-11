@@ -20,6 +20,10 @@ var suggestions = []prompt.Suggest{
 		Description: "store the dump data to database",
 	},
 	{
+		Text:        "Querydata",
+		Description: "Try to query the dump data",
+	},
+	{
 		Text:        "dump",
 		Description: "dump node and links info",
 	},
@@ -52,6 +56,10 @@ func cli(ctrl *biz.MasterController) {
 			{
 				Pattern: "storepoint",
 				Action:  mctrl.storepoint,
+			},
+			{
+				Pattern: "Querydata",
+				Action: mctrl.querydump,
 			},
 			{
 				Pattern: "exit",
@@ -124,4 +132,9 @@ func (c *mctrl) storepoint(s []string) {
 	}
 	influxdb.Storedata(results)
 	log.Infof("storepoint: finish")
+}
+
+func (c *mctrl) querydump(s []string) {
+	results := influxdb.Querydata()
+	log.Infof("querydump: %+v", results)
 }

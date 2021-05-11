@@ -1,5 +1,176 @@
-// Configure graphics'
-
+// example dump data
+var data_dump = [
+    {
+        "From": "127.0.0.1:47720",
+        "Reply": {
+            "Node": {
+                "ID": "QmQdb1MdzB7Gpjczx2t6ytXMz6ZgygXGmcocdHZ8i9y958",
+                "Protocols": {
+                    "": {
+                        "RateIn": 55.25807984448075,
+                        "RateOut": 27.97877460480713,
+                        "TotalIn": 102895316,
+                        "TotalOut": 52929950
+                    },
+                    "/fastboot/0.0.1": {
+                        "RateIn": 0,
+                        "RateOut": 0,
+                        "TotalIn": 0,
+                        "TotalOut": 350
+                    },
+                    "/ipfs/id/1.0.0": {
+                        "RateIn": 0,
+                        "RateOut": 0,
+                        "TotalIn": 12367,
+                        "TotalOut": 62032
+                    },
+                    "/ipfs/id/push/1.0.0": {
+                        "RateIn": 0,
+                        "RateOut": 0,
+                        "TotalIn": 9554906,
+                        "TotalOut": 159356
+                    },
+                    "/ipfs/kad/1.0.0": {
+                        "RateIn": 2.469727125101893e-9,
+                        "RateOut": 2.189660221740354e-9,
+                        "TotalIn": 84868326,
+                        "TotalOut": 117561493
+                    },
+                    "/ipfs/lan/kad/1.0.0": {
+                        "RateIn": 9.409332202854975e-10,
+                        "RateOut": 7.153025724365561e-10,
+                        "TotalIn": 120802629,
+                        "TotalOut": 111594218
+                    },
+                    "/libp2p/autonat/1.0.0": {
+                        "RateIn": 0,
+                        "RateOut": 0,
+                        "TotalIn": 481880,
+                        "TotalOut": 466829
+                    },
+                    "/meshsub/1.1.0": {
+                        "RateIn": 40.21808634849647,
+                        "RateOut": 44.06456407662479,
+                        "TotalIn": 3640700864,
+                        "TotalOut": 3646446095
+                    },
+                    "/p2p/id/delta/1.0.0": {
+                        "RateIn": 0,
+                        "RateOut": 0,
+                        "TotalIn": 338451,
+                        "TotalOut": 219764
+                    },
+                    "/sync/getallledgers": {
+                        "RateIn": 13.989390521757485,
+                        "RateOut": 60.853836709626606,
+                        "TotalIn": 117376453,
+                        "TotalOut": 143580887
+                    },
+                    "/sync/getgenesis": {
+                        "RateIn": 9.792571111646772,
+                        "RateOut": 12.590448572111491,
+                        "TotalIn": 13580770,
+                        "TotalOut": 14680348
+                    },
+                    "/topic-wires/1.0.0": {
+                        "RateIn": 0,
+                        "RateOut": 0,
+                        "TotalIn": 36293,
+                        "TotalOut": 27386
+                    }
+                }
+            },
+            "Links": {
+                "12D3KooWEbb8qwmvLWWdX6XT6CTj8wJ3CPksvrFAgJ6aLYR4LAFP": {
+                    "RateIn": 0,
+                    "RateOut": 0,
+                    "TotalIn": 0,
+                    "TotalOut": 10152
+                },
+                "12D3KooWG8kB6jSLA1UyQkb5CXPuKTeNgb5iV3azeQtjYN77KKmH": {
+                    "RateIn": 0,
+                    "RateOut": 0,
+                    "TotalIn": 0,
+                    "TotalOut": 7308
+                },
+                "12D3KooWHYmLEvtocH54uvL2YvoGkXLfXN95oeiLfFdNLDKrwYgH": {
+                    "RateIn": 0,
+                    "RateOut": 0,
+                    "TotalIn": 0,
+                    "TotalOut": 10620
+                },
+                "12D3KooWKE9inmFvteFojKHkNVWeEgEAnThB47qVqifcPZHxjmzs": {
+                    "RateIn": 0,
+                    "RateOut": 0,
+                    "TotalIn": 0,
+                    "TotalOut": 10260
+                },
+                "12D3KooWPWfWnHZoGsVMwhY1GHe5BvVw53CV6fsJDebJUPSRDUPo": {
+                    "RateIn": 0,
+                    "RateOut": 0,
+                    "TotalIn": 0,
+                    "TotalOut": 11196
+                },
+                "QmPBjhjebkTGgu6HhbXWDKYsp8UHMd2aqKkwnx7ePaGof2": {
+                    "RateIn": 3.6971964436848124,
+                    "RateOut": 4.78618103664332,
+                    "TotalIn": 484413668,
+                    "TotalOut": 496619102
+                },
+                "QmQ5gcoWtjSQQKG9Pa7saH8aXXvD8Dgcwr9bhhF1Q5pPtT": {
+                    "RateIn": 3.6971990003154964,
+                    "RateOut": 4.6388588993743065,
+                    "TotalIn": 489744435,
+                    "TotalOut": 468811470
+                },
+                "QmSoz4S77ZNrVLoGUL2CWWLNyRYta5BugoLAnCyaKNKCC4": {
+                    "RateIn": 7.253409885771596,
+                    "RateOut": 9.202138353936366,
+                    "TotalIn": 482258613,
+                    "TotalOut": 484869086
+                },
+                "QmSzmMQqC7uP8YDACKVBTQKarGticVC2iZLhmdecLarJXZ": {
+                    "RateIn": 7.2534098856545395,
+                    "RateOut": 6.389290719733717,
+                    "TotalIn": 489071141,
+                    "TotalOut": 487082004
+                },
+                "QmX6ZnrUGhTdEfAMQYjLx3CwWexdozSXcXY8GdsEUPVZJY": {
+                    "RateIn": 4.178490367970922,
+                    "RateOut": 5.403770585430248,
+                    "TotalIn": 498640082,
+                    "TotalOut": 499120145
+                },
+                "QmYom65TusPYoE522ZEsfW8zJp2zAvoms66jQvkmvDUTwr": {
+                    "RateIn": 3.706011256737523,
+                    "RateOut": 4.650166661723141,
+                    "TotalIn": 483190898,
+                    "TotalOut": 500870560
+                },
+                "QmagfSwUdwDtvuDtM2GMSrNPiwgy464uD5xbpgs5AU1Jg9": {
+                    "RateIn": 3.5498241393436185,
+                    "RateOut": 4.638858899222355,
+                    "TotalIn": 503450499,
+                    "TotalOut": 497091033
+                },
+                "Qmb7vL2Wo2o6fWPdiTHtGE3sK1bvvGokPRBjK4x5SJj6dM": {
+                    "RateIn": 82.21657559231804,
+                    "RateOut": 101.12819214727719,
+                    "TotalIn": 160217891,
+                    "TotalOut": 162320527
+                },
+                "Qmc6ic4exyYH8tsXTCUnhsmHjPLbmVayZkXEyumB4wF7KE": {
+                    "RateIn": 3.7060112567457226,
+                    "RateOut": 4.650166661699019,
+                    "TotalIn": 499661028,
+                    "TotalOut": 490895245
+                }
+            },
+            "ErrMessage": ""
+        }
+    }
+]
+//
 
 infodict = {}
 
@@ -197,12 +368,15 @@ var fdGraph = d3.select('#graphic svg')
 // .attr('height', 0.8 * height)
 
 // Create the force layout to calculate and animate node spacing
+
+console.log(d3.select('svg'))
+
 var forceLayout = d3.layout.force()
     .nodes(nodes)
     .links([])
     .gravity(gravity)
     .charge(charge)
-    .size([0.6 * width, 0.8 * height])
+    .size([width, height])
 
 // Create the SVG lines for the links
 var link = fdGraph
@@ -373,16 +547,15 @@ node.append('text')
 link
     .append('text')
     .attr('transform', function (d) {
-        console.log("222")
         var a = d.source
         console.log(a, d)
         return `translate(` + 100 + ',' + 100 + ')'
     })
-    // .text(function (d) {
-    //     return "I am Text"
-    //     //strconv.Itoa(TotalIn) + strconv.Itoa(TotalOut)
-    // })
-    // .attr('font-size', '12')
+// .text(function (d) {
+//     return "I am Text"
+//     //strconv.Itoa(TotalIn) + strconv.Itoa(TotalOut)
+// })
+// .attr('font-size', '12')
 
 var nihao = true
 var nihaonihao = 0
@@ -480,3 +653,29 @@ function showHint(str) {
     }
     console.log(str, "触发了")
 }
+
+function node_infopanel(id) {
+    var node = data_dump[id].Reply.Node
+    d3.select(".infopanel").select("#kind")
+        .text("node name:" + node.ID)
+    d3.select(".infopanel").select('#data')
+        .text("node data:" + node.Protocols)
+}
+
+function link_infopanel(id) {
+    var link = data_dump[id].Reply.Links
+    var kk = 1
+    for (var k in link) {
+        if (kk <= 3) {
+            d3.select(".infopanel").append('p')
+                .text("link name:" + k)
+            for (var k1 in link[k]) {
+                d3.select(".infopanel").append('p')
+                    .text(k1 + ":" + link[k][k1])
+            }
+        }
+        kk += 1
+    }
+}
+node_infopanel(0)
+// link_infopanel(0)    

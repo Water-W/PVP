@@ -15,7 +15,9 @@ body {
 .container {
     flex: 1 1 90%;
     display: grid;
-    grid: repeat(1fr, 2) / repeat(1fr, 5);
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    /* grid-gap: 10px, 10px; */
     padding: 10px;
     margin: 0px;
 }
@@ -38,6 +40,7 @@ body {
 }
 
 #graphic svg {
+    border: black dashed 1px;
     width: 90%;
     height: 90%;
 }

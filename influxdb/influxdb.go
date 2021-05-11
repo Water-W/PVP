@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"time"
+
 	"github.com/Water-W/PVP/pkg/biz"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"time"
+	// protocol "github.com/influxdata/line-protocol"
 	// "encoding/json"
 )
 
@@ -26,10 +28,23 @@ func write_dump(client influxdb2.Client, data []biz.DumpResult) {
 		// ipdatafrom := v1.From (数据来源ip)
 
 		// 断言interface
+		protocols := make(map[string]map[string]float64)
 		nodes := make(map[string]string)
 		for k, v := range v1.Reply.Node.(map[string]interface{}) {
-			nodes[k] = v.(string)
+			if k == "ID" {
+				nodes[k] = v.(string)
+			}
+			if k == "Protocols" {
+				for k1, v1 := range v.(map[string]interface{}) {
+					p := make(map[string]float64)
+					for k2, v2 := range v1.(map[string]interface{}) {
+						p[k2] = v2.(float64)
+					}
+					protocols[k1] = p
+				}
+			}
 		}
+
 		links := make(map[string]map[string]float64)
 		for k, v := range v1.Reply.Links {
 			m := make(map[string]float64)
@@ -38,24 +53,47 @@ func write_dump(client influxdb2.Client, data []biz.DumpResult) {
 			}
 			links[k] = m
 		}
-		// fmt.Printf("%#v\n", links)
+		// 最后刷新数据库的写入
+		defer writeAPI.Flush()
+		// 每个link存一条，每个node 存一条，每个protocol存一条。
 		nodename := nodes["ID"]
-		for s2 := range v1.Reply.Links {
+		for k := range links {
 			p := influxdb2.NewPoint("dump",
 				map[string]string{
 					"kind": "edge",
 					"from": nodename,
-					"to":   s2,
+					"to":   k,
 				},
 				map[string]interface{}{
-					"RateIn":   links[s2]["RateIn"],
-					"RateOut":  links[s2]["RateOut"],
-					"TotalIn":  links[s2]["TotalIn"],
-					"TotalOut": links[s2]["TotalOut"],
+					"RateIn":   links[k]["RateIn"],
+					"RateOut":  links[k]["RateOut"],
+					"TotalIn":  links[k]["TotalIn"],
+					"TotalOut": links[k]["TotalOut"],
 				},
 				time.Now())
 			writeAPI.WritePoint(p)
-			writeAPI.Flush()
+		}
+		for k := range protocols {
+			ty := "other"
+			name := k
+			if k == "" {
+				ty = "total"
+				name = "total"
+			}
+			p := influxdb2.NewPoint("dump",
+				map[string]string{
+					"kind":     "node",
+					"protocol": ty,
+					"name": name,
+				},
+				map[string]interface{}{
+					"RateIn":   protocols[k]["RateIn"],
+					"RateOut":  protocols[k]["RateOut"],
+					"TotalIn":  protocols[k]["TotalIn"],
+					"TotalOut": protocols[k]["TotalOut"],
+				},
+				time.Now())
+			writeAPI.WritePoint(p)
 		}
 	}
 }
@@ -71,32 +109,25 @@ func Storedata(data []biz.DumpResult) {
 	defer client.Close()
 }
 
-func Querydata() {
+func Querydata() string {
 
 	client := getclient()
-	query := fmt.Sprintf("from(bucket:\"%v\")|> range(start: -1h) |> filter(fn: (r) => r._measurement == \"stat\")", bucket)
+	// timestart := "2021-05-11 07:00:00.850"
+	// timestop := "2021-05-11 16:27:01.828"
+	query := fmt.Sprintf("from(bucket: \"%v\") |> range(start: -2h) |> filter(fn: (r) => r[\"_measurement\"] == \"dump\")", bucket)
+
+	
 	// Get query client
 	queryAPI := client.QueryAPI(org)
 	// get QueryTableResult
-	result, err := queryAPI.Query(context.Background(), query)
-
+	// result, err := queryAPI.Query(context.Background(), query)
+	result, err := queryAPI.QueryRaw(context.Background(), query, influxdb2.DefaultDialect())
 	if err == nil {
-		// Iterate over query response
-		for result.Next() {
-			// Notice when group key has changed
-			if result.TableChanged() {
-				fmt.Printf("table: %s\n", result.TableMetadata().String())
-			}
-			// Access data
-			fmt.Printf("value: %v\n", result.Record().Value())
-		}
-		// check for an error
-		if result.Err() != nil {
-			fmt.Printf("query parsing error: %v\n", result.Err().Error())
-		}
-	} else {
-		panic(err)
-	}
-
+        fmt.Println("QueryResult:")
+        fmt.Println(result)
+    } else {
+        panic(err)
+    }
 	defer client.Close()
+	return result
 }
