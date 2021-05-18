@@ -55,6 +55,7 @@ body {
 .overviewpanel {
     grid-column: 4 / 6;
     grid-row: 1 / 2;
+    display: flex;
 }
 
 .infopanel {
@@ -65,4 +66,10 @@ body {
 .panelbox {
     border: black dashed 1px;
     margin: 5px;
+}
+
+.overviewpanel svg {
+  height: 80%;
+  width: 80%;
+  text-align: center;
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Water-W/PVP/pkg/biz"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api/query"
 	// protocol "github.com/influxdata/line-protocol"
 	// "encoding/json"
 )
@@ -78,13 +79,14 @@ func write_dump(client influxdb2.Client, data []biz.DumpResult) {
 			name := k
 			if k == "" {
 				ty = "total"
-				name = "total"
+				name = nodename
 			}
 			p := influxdb2.NewPoint("dump",
 				map[string]string{
 					"kind":     "node",
 					"protocol": ty,
-					"name": name,
+					"name":     name,
+					"nodename": nodename,
 				},
 				map[string]interface{}{
 					"RateIn":   protocols[k]["RateIn"],
@@ -109,25 +111,50 @@ func Storedata(data []biz.DumpResult) {
 	defer client.Close()
 }
 
-func Querydata() string {
+func Querydata() ([]*query.FluxRecord, error){
 
 	client := getclient()
 	// timestart := "2021-05-11 07:00:00.850"
 	// timestop := "2021-05-11 16:27:01.828"
-	query := fmt.Sprintf("from(bucket: \"%v\") |> range(start: -2h) |> filter(fn: (r) => r[\"_measurement\"] == \"dump\")", bucket)
+	querystring := fmt.Sprintf("from(bucket: \"%v\") |> range(start: -10h) |> filter(fn: (r) => r[\"_measurement\"] == \"dump\")", bucket)
 
-	
 	// Get query client
 	queryAPI := client.QueryAPI(org)
 	// get QueryTableResult
-	// result, err := queryAPI.Query(context.Background(), query)
-	result, err := queryAPI.QueryRaw(context.Background(), query, influxdb2.DefaultDialect())
+	result, err := queryAPI.Query(context.Background(), querystring)
+	var records []* query.FluxRecord
 	if err == nil {
-        fmt.Println("QueryResult:")
-        fmt.Println(result)
-    } else {
-        panic(err)
-    }
+		// Iterate over query response
+		// 对于每一条记录进行处理
+		for result.Next() {
+			// Notice when group key has changed
+			
+			// if result.TableChanged() {
+				// fmt.Printf("table: %s\n\n", result.TableMetadata().String())
+			// }
+			
+			// Access data
+			// fmt.Printf("value: %v\n\n", result.Record().Values())
+			records = append(records, result.Record())
+		}
+		// check for an error
+		if result.Err() != nil {
+			fmt.Printf("query parsing error: %s\n", result.Err().Error())
+		}
+	} else {
+		panic(err)
+	}
+	//将查询到的数据进行处理
+
 	defer client.Close()
-	return result
+	return records, err
 }
+
+// result, err := queryAPI.QueryRaw(context.Background(), query, influxdb2.DefaultDialect())
+
+// if err == nil {
+// 	fmt.Println("QueryResult:")
+// 	fmt.Println(result)
+// } else {
+// 	panic(err)
+// }

@@ -135,6 +135,6 @@ func (c *mctrl) storepoint(s []string) {
 }
 
 func (c *mctrl) querydump(s []string) {
-	results := influxdb.Querydata()
-	log.Infof("querydump: %+v", results)
+	influxdb.Querydata()
+	log.Infof("querydump: finish")
 }

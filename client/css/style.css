@@ -55,11 +55,12 @@ body {
   grid-column: 4 / 6;
   grid-row: 1 / 2;
   display: flex;
+  flex-direction: column;
 }
 
 .overviewpanel svg {
-  height: 80%;
-  width: 80%;
+  height: 95%;
+  width: 95%;
   text-align: center;
 }
 

@@ -9,6 +9,7 @@ import (
 
 	// "github.com/tidwall/gjson"
 
+	"github.com/Water-W/PVP/influxdb"
 	"github.com/Water-W/PVP/pkg/biz"
 	// "github.com/Water-W/PVP/pkg/metrics/json"
 )
@@ -35,6 +36,46 @@ func (s *server) dump(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(j)
 }
+func (s *server) query(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		data:=r.URL.Query()
+		//获取URL中的Param数据
+		for k:= range data{
+		//data是一个二维数组，k为对应的键
+			fmt.Println(k)
+			fmt.Println(data[k][0])
+			//值都存在第一个，所以都为0
+		}
+	} else {
+		fmt.Println("不是post")
+		data:=r.URL.Query()
+		//获取URL中的Param数据
+		for k:= range data{
+		//data是一个二维数组，k为对应的键
+			fmt.Println(k)
+			fmt.Println(data[k][0])
+			//值都存在第一个，所以都为0
+		}
+		//可以获取url中的数据
+	}
+	request, err := influxdb.Querydata()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	var answer []map[string]interface{}
+	for i := 0;i < len(request);i++ {
+		answer = append(answer, request[i].Values())
+	}
+
+	// 转换dump的结果为标准json
+	j, err := json.Marshal(answer)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	w.Write(j)
+}
 
 //设置json mode,使其应用在worker上
 func (s *server) setjm(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +93,7 @@ func myhttp(ctrl *biz.MasterController) {
 
 	//获取dump的信息
 	http.HandleFunc("/dump", s.dump)
-
+	http.HandleFunc("/query", s.query)
 	//设置json mode
 	http.HandleFunc("/setjsonmode", s.setjm)
 
