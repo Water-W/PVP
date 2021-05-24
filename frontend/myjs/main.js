@@ -170,13 +170,16 @@ var data_dump = [
         }
     }
 ]
-//
-
-infodict = {}
+let mm = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105", "106", "107", "108", "109"]
 
 var width = $("#graphic").width(),
     height = $("#graphic").height();
+let forceWidth = width
+let forceHeight = height
+let aWidth = $(".overviewpanel").width();
+let aHeight = $(".overviewpanel").height();
 
+console.log('awidth', aWidth)
 
 const info = document.createElement("div");
 info.setAttribute("class", "info-panel");
@@ -185,59 +188,20 @@ infopanel = d3.select(".info-panel")
     .style("position", "fixed")
 
 
-console.log(width, height);
+var charge = -45,
+    circleW = 8,
+    circleWbig = 15,
+    strokewidth = 2//正常stroke-width
 
-var circleWidth = 5,
-    harge = -75 * 0.6,
-    gravity = 0.1;
-
-var lock_click = 0;
-
-//给node和link编号
-var nodeNum = 0
-var linkNum = 0
-
-var mylink = []
-var mynode = []
-
-var palette = {
-    "lightgray": "#D9DEDE",
-    "gray": "#C3C8C8",
-    "mediumgray": "#536870",
-    "orange": "#BD3613",
-    "purple": "#595AB7",
-    "yellowgreen": "#738A05"
-}
-
-// Generate test data， 每个节点随机连接到x个节点，x在0~Maxcon中随机。
-let nodes = [];
-let numNodes = 100;
-let Maxcon = 10 //每个节点的
-for (let x = 0; x < numNodes; x++) {
-    let targetAry = [];
-    let connections = (Math.round(Math.random() * Maxcon));
-    for (let y = 0; y < connections; y++) {
-        targetAry.push(Math.floor(Math.random() * numNodes))
-    }
-    nodes.push({
-        id: x,
-        name: "Node_" + x,
-        target: targetAry
-    })
-}
-
-// Create the links array from the generated data
-var links = [];
-for (var i = 0; i < nodes.length; i++) {
-    if (nodes[i].target !== undefined) {
-        for (var j = 0; j < nodes[i].target.length; j++) {
-            links.push({
-                source: nodes[i],
-                target: nodes[nodes[i].target[j]]
-            })
-        }
-    }
-}
+//颜色
+const palette = {
+    lightgray: "#D9DEDE",
+    gray: "#C3C8C8",
+    mediumgray: "#536870",
+    orange: "#BD3613",
+    purple: "#595AB7",
+    yellowgreen: "#738A05",
+};
 
 try {
     request = new XMLHttpRequest();
@@ -270,7 +234,8 @@ function getquery() {
     myhttpRequest.send();
     var netdata = myhttpRequest.responseText
     netdata = eval("(" + netdata + ")")
-    console.log("查询获得数据", netdata)
+    console.log("查询获得数据")
+    console.log('123', d3.group(netdata, (d) => d._time))
     return dealdata(netdata)
 }
 
@@ -282,13 +247,12 @@ function getquery() {
 
 // 日期到数据的映射
 var time_data = []
-
+var map_node = new Map();//节点名字到id映射
+let nodeNum = 0 //
+let links = []
+let nodes = [] //当前状态下的所有节点
 // 处理同一个时间所有worker传来的数据
 function dealdata(netdata) {
-    // 保存node link 的name 和 id的对应关系
-    var map_node = new Map();
-    var map_link = new Map();
-
     // 返回值 0表示节点不存在，非零表示已经存在
     function pushNode(nodename) {
         if (map_node.has(nodename)) {
@@ -297,22 +261,9 @@ function dealdata(netdata) {
         } else {
             map_node.set(nodename, nodeNum)
             nodeNum++
+            return 0
         }
-        return 0;
     }
-
-    function pushLink(linkname) {
-        if (map_link.has(linkname)) {
-            // 如果link已存在返回零
-            return 1
-        } else {
-            //如果未存在则设置其编号
-            map_link.set(linkname, linkNum)
-            linkNum++
-        }
-        return 0
-    }
-
     // 处理每个worker返回的结果。
     if (netdata[0] === null) {
         // alert("dump 没有数据")
@@ -321,48 +272,10 @@ function dealdata(netdata) {
     }
     console.log("dump有数据。")
 
-    // 保存node link 的name 和 id的对应关系
-    let map_node = new Map();
-    let map_link = new Map();
-    let nodeNum = 0 //一个之间状态下node的编号
-    let linkNum = 0
-    // 返回值 0表示节点不存在，非零表示已经存在
-    function pushNode(nodename) {
-        if (map_node.has(nodename)) {
-            return 1
-        }
-        map_node.set(nodename, nodeNum)
-        nodeNum++
-        return 0;
-    }
-    function pushLink(linkname) {
-        if (map_link.has(linkname)) {
-            // 如果link已存在返回零
-            return 1
-        } else {
-            //如果未存在则设置其编号
-            map_link.set(linkname, linkNum)
-            linkNum++
-        }
-        return 0
-    }
 
-    let edges = []
-    let thisnode = new Object()
-    let nodes = [] //当前状态下的所有节点
-    let protocols = []
     for (var i = 0; i < netdata.length; i += 4) {
         if (netdata[i].kind === 'edge') {
-            edges.push({
-                from: netdata[i].from,
-                to: netdata[i].to,
-                source: netdata[i].from,
-                target: netdata[i].to,
-                RateIn: netdata[i]._value,
-                RateOut: netdata[i + 1]._value,
-                TotalIn: netdata[i + 2]._value,
-                TotalOut: netdata[i + 3]._value
-            })
+            // 创建node,以便下面edges压入id
             if (pushNode(netdata[i].from) === 0) {
                 nodes.push({
                     id: nodeNum - 1,
@@ -377,6 +290,19 @@ function dealdata(netdata) {
                     target: []
                 })
             }
+            let from_id = map_node.get(netdata[i].from)
+            let to_id = map_node.get(netdata[i].to)
+            links.push({
+                'from': netdata[i].from,
+                'to': netdata[i].to,
+                'source': from_id,
+                'target': to_id,
+                'RateIn': netdata[i]._value,
+                'RateOut': netdata[i + 1]._value,
+                'TotalIn': netdata[i + 2]._value,
+                'TotalOut': netdata[i + 3]._value
+            })
+            nodes[from_id].target.push(to_id)
         }
         if (netdata[i].kind === 'node') {
             if (netdata[i].protocol === 'other') {
@@ -390,135 +316,139 @@ function dealdata(netdata) {
                     })
                     x = nodeNum - 1
                 } else {
-                    x = map_node[netdata[i].nodename]
+                    x = map_node.get(netdata[i].nodename)
                 }
-                if(!'protocols' in nodes[x]) {
+                if (nodes[x].protocols === undefined) {
                     nodes[x].protocols = []
                 }
                 nodes[x].protocols.push({
-                    name: netdata[i].nodename,
-                    RateIn: netdata[i]._value,
-                    RateOut: netdata[i + 1]._value,
-                    TotalIn: netdata[i + 2]._value,
-                    TotalOut: netdata[i + 3]._value
+                    'name': netdata[i].name,
+                    'RateIn': netdata[i]._value,
+                    'RateOut': netdata[i + 1]._value,
+                    'TotalIn': netdata[i + 2]._value,
+                    'TotalOut': netdata[i + 3]._value
                 })
             }
             if (netdata[i].protocol === 'total') {
-                let thisnodeid = map_node[netdata[i].name]
-                nodes[thisnodeid] = {
-                    id: thisnodeid,
-                    name: netdata[i].name,
-                    RateIn = netdata[i]._value,
-                    RateOut = netdata[i + 1]._value,
-                    TotalIn = netdata[i + 2]._value,
-                    TotalOut = netdata[i + 3]._value,
-                }
+                let thisnodeid = map_node.get(netdata[i].name)
+                nodes[thisnodeid].RateIn = netdata[i]._value
+                nodes[thisnodeid].RateOut = netdata[i + 1]._value
+                nodes[thisnodeid].TotalIn = netdata[i + 2]._value
+                nodes[thisnodeid].TotalOut = netdata[i + 3]._value
             }
         }
     }
-    let res = new Object()
-    res.node = nodes
-    res.links = edges
-    return res
+    return { "nodes": nodes, "links": links }
 }
-
 let ook = getquery()
 console.log(ook)
 
-function dealdealdata(netdata) {
+let drag = simulation => {
 
-
-    // 每个记录是本结点加上本节点和别的节点的连接。优先填充本节点的信息，连接到的节点信息之后之后再补充。
-    function dealdata(netdata) {
-        // 处理每个worker返回的结果。
-        for (var i = 0; i < netdata.length; i++) {
-            var name_link = Object.keys(netdata[i].Reply.Links)
-            console.log(name_link)
-            let targetAry = [];
-            var thisnodeid = nodeNum
-            var thislink = netdata[i].Reply.Links
-            var thisnodename = netdata[i].Reply.Node.ID
-            var x = pushNode(thisnodename)
-
-            if (x) {
-                thisnodeid = x
-            } else {
-                mynode.push({
-                    id: thisnodeid,
-                    name: thisnodename,
-                })
-            }
-
-            for (var j = 0; j < name_link.length; j++) {
-                x = pushNode(name_link[j])
-                if (x === 0) {
-                    mynode.push({
-                        id: nodeNum - 1,
-                        name: name_link[j],
-                        target: []
-                    })
-                    targetAry.push(nodeNum)
-                } else {
-                    targetAry.push(x)
-                }
-                x = pushLink(thisnodename + name_link[j])
-                // 如果是新link，则压入mylink中
-                if (x === 0) {
-                    mylink.push({
-                        source: mynode[thisnodeid],
-                        target: mynode[nodeNum - 1],
-                        RateIn: thislink[name_link[j]].RateIn,
-                        RateOut: thislink[name_link[j]].RateOut,
-                        TotalIn: thislink[name_link[j]].TotalIn,
-                        TotalOut: thislink[name_link[j]].TotalOut
-                    })
-                }
-
-            }
-            mynode[thisnodeid].target = targetAry;
-        }
-        // 定义自己的node link
-        console.log(mynode)
-        console.log(mylink)
+    function dragstarted(event) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
     }
+
+    function dragged(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+    }
+
+    function dragended(event) {
+        if (!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+    }
+
+    return d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
 }
+var simulation
+function overnode(event, node) {
+    //重置
+    d3.selectAll('.node')
+        .attr('r', circleW)
+    d3.selectAll('.line')
+        .attr('stroke', palette.lightgray)
+        .attr('stroke-width', 2)
 
-function buildforce(nodess, linkss) {
-    // Generate test data， 每个节点随机连接到x个节点，x在0~Maxcon中随机。
-    let nodes = [];
-    let numNodes = 100;
-    let Maxcon = 10 //每个节点的
-    for (let x = 0; x < numNodes; x++) {
-        let targetAry = [];
-        let connections = (Math.round(Math.random() * Maxcon));
-        for (let y = 0; y < connections; y++) {
-            targetAry.push(Math.floor(Math.random() * numNodes))
+    // Hightlight the nodes that the current node connects to
+    // for (let i = 0; i < node.target.length; i++) {
+    //   d3.select('#node_' + d.target[i]).select('text')
+    //     .attr('font-size', '14')
+    //     .attr('font-weight', 'bold')
+    // }
+    let nodeid = node.id
+    // Node
+    // link connect to this node is orange
+    // link connect from this node to other is purple
+    for (let x = 0; x < links.length; x++) {
+        // 高亮我连出去的node
+        if (links[x].source === nodeid) {
+            d3.select('#node_' + links[x].target)
+                .attr('r', circleWbig)
         }
-        nodes.push({
-            id: x,
-            name: "node_" + x,
-            target: targetAry
-        })
+        if (links[x].target === nodeid) {
+            d3.select('#node_' + links[x].source)
+                .attr('r', circleWbig)
+        }
     }
+    //高亮我
+    d3.select("#node_" + nodeid)
+        .attr('r', circleWbig)
 
-    // Create the links array from the generated data
-    var links = [];
-    for (var i = 0; i < nodes.length; i++) {
-        if (nodes[i].target !== undefined) {
-            for (var j = 0; j < nodes[i].target.length; j++) {
-                links.push({
-                    source: i,
-                    target: nodes[i].target[j],
-                    sourcenode: nodes[i],
-                    targetnode: nodes[nodes[i].target[j]]
-                })
+    // Link
+    // Highlight the connections to this node高亮到我的边
+    d3.selectAll('.to_' + nodeid)
+        .attr('stroke', palette.orange)
+        .attr('stroke-width', 3)
+
+    // Highlight the connections from this node高亮从我出去的边
+    d3.selectAll('.from_' + nodeid)
+        .attr('stroke', palette.purple)
+        .attr('stroke-width', 3)
+
+    // When mousing over a node, 
+    // make it more repulsive so it stands out 让他排斥周围的节点而突出
+    // console.log('over', node)
+    function strength(node2, id) {
+        // console.log("node",node,"id",id)
+        if (id != nodeid) {
+            // Make the nodes connected to more repulsive
+            for (let i = 0; i < node.target.length; i++) {
+                if (id === node.target[i]) {
+                    return charge * 8
+                }
             }
+            // Make the nodes connected from more repulsive
+            for (let x = 0; x < links.length; x++) {
+                if (links[x].source === id) {
+                    if (links[x].target === nodeid) {
+                        return charge * 8
+                    }
+                }
+            }
+            // 不相关的节点保持原来的样子
+            return charge * 2;
+        } else {
+            // Make the selected node more repulsive
+            return charge * 10;
         }
     }
+    simulation.force("charge", d3.forceManyBody().strength(strength));
+    simulation.restart();
+}
+function buildforce(nodess, linkss) {
 
+    nodes = nodess
+    links = linkss
     // links nodes
-    const simulation = d3.forceSimulation(nodes)
-        .force("charge", d3.forceManyBody().strength(-45))
+    simulation = d3.forceSimulation(nodes)
+        .force("charge", d3.forceManyBody().strength(-75))
         .force("link", d3.forceLink(links))
         .force("center", d3.forceCenter(forceWidth / 2, forceHeight / 2));
 
@@ -532,12 +462,14 @@ function buildforce(nodess, linkss) {
         .selectAll("line")
         .data(links)
         .join("line")
-        .attr("stroke-width", d => Math.sqrt(d.value))
+        .attr("stroke-width", 2)//d => Math.sqrt(d.value))
         .attr('class', function (d, i) {
             // Add classes to lines to identify their from's and to's
-            var theClass = 'from_' + d.sourcenode.id + ' line ';
+
+            // console.log("line",d)
+            var theClass = 'from_' + d.source.id + ' line ';
             if (d.target !== undefined) {
-                theClass += 'to_' + d.targetnode.id
+                theClass += 'to_' + d.target.id
             }
             // line_1 line to_2 (ps:这里表示分别属于三个类，line1、line、to_2)
             return theClass
@@ -548,10 +480,10 @@ function buildforce(nodess, linkss) {
     function overnode(event, node) {
         //重置
         d3.selectAll('.node')
-            .attr('r', 5)
+            .attr('r', circleW)
         d3.selectAll('.line')
             .attr('stroke', palette.lightgray)
-            .attr('stroke-width', 1)
+            .attr('stroke-width', 2)
 
         // Hightlight the nodes that the current node connects to
         // for (let i = 0; i < node.target.length; i++) {
@@ -565,18 +497,18 @@ function buildforce(nodess, linkss) {
         // link connect from this node to other is purple
         for (let x = 0; x < links.length; x++) {
             // 高亮我连出去的node
-            if (links[x].sourcenode.id === nodeid) {
-                d3.select('#node_' + links[x].targetnode.id)
-                    .attr('r', 10)
+            if (links[x].source === nodeid) {
+                d3.select('#node_' + links[x].target)
+                    .attr('r', circleWbig)
             }
-            if (links[x].targetnode.id === nodeid) {
-                d3.select('#node_' + links[x].sourcenode.id)
-                    .attr('r', 10)
+            if (links[x].target === nodeid) {
+                d3.select('#node_' + links[x].source)
+                    .attr('r', circleWbig)
             }
         }
         //高亮我
         d3.select("#node_" + nodeid)
-            .attr('r', 10)
+            .attr('r', circleWbig)
 
         // Link
         // Highlight the connections to this node高亮到我的边
@@ -591,7 +523,7 @@ function buildforce(nodess, linkss) {
 
         // When mousing over a node, 
         // make it more repulsive so it stands out 让他排斥周围的节点而突出
-        console.log(node)
+        // console.log('over', node)
         function strength(node2, id) {
             // console.log("node",node,"id",id)
             if (id != nodeid) {
@@ -603,14 +535,14 @@ function buildforce(nodess, linkss) {
                 }
                 // Make the nodes connected from more repulsive
                 for (let x = 0; x < links.length; x++) {
-                    if (links[x].sourcenode.id === id) {
-                        if (links[x].targetnode.id === nodeid) {
+                    if (links[x].source === id) {
+                        if (links[x].target === nodeid) {
                             return charge * 8
                         }
                     }
                 }
                 // 不相关的节点保持原来的样子
-                return charge * 1;
+                return charge * 2;
             } else {
                 // Make the selected node more repulsive
                 return charge * 10;
@@ -625,100 +557,50 @@ function buildforce(nodess, linkss) {
         .selectAll("circle")
         .data(nodes)
         .join("circle")
-        .attr('r', circleWidth)
+        .attr('r', circleW)
         .attr('class', 'node')
         .attr('id', function (d) { return "node_" + d.id })
         .attr('fill', function (d, i) {
             // Color 1/3 of the nodes each color
             // Depending on the data, this can be made more meaningful
             // 可以根据节点的压力来改变颜色。
-            if (i < (numNodes / 3)) {
+            if (i < (15 / 3)) {
                 return palette.orange
-            } else if (i < (numNodes - (numNodes / 3))) {
+            } else if (i < (15 - (15 / 3))) {
                 return palette.purple
             }
             return palette.yellowgreen
         })
-        .on('mouseover', function overnode(event, node) {
-            //重置
-            d3.selectAll('.node')
-                .attr('r', 5)
-            d3.selectAll('.line')
-                .attr('stroke', palette.lightgray)
-                .attr('stroke-width', 1)
+        .on('mouseover', overnode)
+        .on('click', function (event, node) {
+            console.log('click', node)
+            //先清空 infopanel todo
 
-            // Hightlight the nodes that the current node connects to
-            // for (let i = 0; i < node.target.length; i++) {
-            //   d3.select('#node_' + d.target[i]).select('text')
-            //     .attr('font-size', '14')
-            //     .attr('font-weight', 'bold')
-            // }
-            let nodeid = node.id
-            // Node
-            // link connect to this node is orange
-            // link connect from this node to other is purple
-            for (let x = 0; x < links.length; x++) {
-                // 高亮我连出去的node
-                if (links[x].sourcenode.id === nodeid) {
-                    d3.select('#node_' + links[x].targetnode.id)
-                        .attr('r', 10)
-                }
-                if (links[x].targetnode.id === nodeid) {
-                    d3.select('#node_' + links[x].sourcenode.id)
-                        .attr('r', 10)
-                }
-            }
-            //高亮我
-            d3.select("#node_" + nodeid)
-                .attr('r', 10)
-
-            // Link
-            // Highlight the connections to this node高亮到我的边
-            d3.selectAll('.to_' + nodeid)
-                .attr('stroke', palette.orange)
-                .attr('stroke-width', 3)
-
-            // Highlight the connections from this node高亮从我出去的边
-            d3.selectAll('.from_' + nodeid)
-                .attr('stroke', palette.purple)
-                .attr('stroke-width', 3)
-
-            // When mousing over a node, 
-            // make it more repulsive so it stands out 让他排斥周围的节点而突出
+            // < div class="dropdown" >
+            // <span>鼠标移动到我这！</span>
+            // <div class="dropdown-content">
+            // <p>菜鸟教程</p>
+            // <p>www.runoob.com</p>
+            // </div>
+            // </div >
             console.log(node)
-            function strength(node2, id) {
-                // console.log("node",node,"id",id)
-                if (id != nodeid) {
-                    // Make the nodes connected to more repulsive
-                    for (let i = 0; i < node.target.length; i++) {
-                        if (id === node.target[i]) {
-                            return charge * 8
-                        }
-                    }
-                    // Make the nodes connected from more repulsive
-                    for (let x = 0; x < links.length; x++) {
-                        if (links[x].sourcenode.id === id) {
-                            if (links[x].targetnode.id === nodeid) {
-                                return charge * 8
-                            }
-                        }
-                    }
-                    // 不相关的节点保持原来的样子
-                    return charge * 1;
-                } else {
-                    // Make the selected node more repulsive
-                    return charge * 10;
-                }
-            }
-            simulation.force("charge", d3.forceManyBody().strength(strength));
-            simulation.restart();
+            console.log(nodes[node.id])
+            let curdropdown = d3.select('.infopanel').selectAll('.dropdown')
+                .data(nodes[node.id].protocols)
+                .enter()
+                .append('div')
+                .attr('class', 'dropdown');
+
+            let myp = curdropdown.html((d => `<p> ${d.name}</p><div class='dropdown-content'><p>RateIn:${d.RateIn}</p><p>RateOut:${d.RateOut}</p><p>TotalIN:${d.TotalIn}</p><p>TotalOut:${d.TotalOut}</p></div>`));
+            // myp.append('p').text();
+            // curdropdown.append('p').text();
+
         })
-        .on('click', function (event, node) { })
         .call(drag(simulation));
 
     //鼠标悬停时候显示
     node.append("title")
-        .text(d => d.id);
+        .text(d => d.name);
 
     node.append('text')
         .text(function (d) {
@@ -741,25 +623,28 @@ function buildforce(nodess, linkss) {
 
     // 聚焦在34号的方法如下
     // overnode(null, nodes[34])
-
 }
 
-// buildforce()
+buildforce(ook.nodes, ook.links)
 
 
 $(document).click(function (e) {
-    // let line_class = $('line');
-    // let node_class = $('circle');
+    let line_class = $('line');
+    let node_class = $('circle');
+    let search = $('.searchBtn');
     if (!line_class.is(e.target) && line_class.has(e.target).length === 0) {
         if (!node_class.is(e.target) && node_class.has(e.target).length === 0) {
-            // d3.selectAll(".line")
-            //     .attr('stroke', palette.lightgray)
-            //     .attr('stroke-width', 1)
-            // d3.selectAll('.node').selectAll('text')
-            //     .attr('font-size', '12')
-            //     .attr('font-weight', 'normal')
+            if(!search.is(e.target) && search.has(e.target).length === 0){
+            d3.selectAll(".line")
+                .attr('stroke', palette.lightgray)
+                .attr('stroke-width', strokewidth)
+            d3.selectAll('.node')
+                .attr('r', circleW)
+            simulation.force("charge", d3.forceManyBody().strength(-75));
+            simulation.restart();
             console.log("点击空白")
             // lock_click = 0;
+            }
         }
     }
 });
@@ -767,33 +652,179 @@ $(document).click(function (e) {
 d3.select(".searchBtn")
     .on("click", function (e) {
         let ee = document.getElementById("okk").value;
-        console.log(ee)
-        let el = document.querySelector("#node_" + ee + " circle")
+        console.log('lookme', ee)
+        let el = d3.select("#node_" + ee)
+        console.log(el)
+        console.log(nodes[ee])
     })
 
 
-function node_infopanel(id) {
-    var node = data_dump[id].Reply.Node
-    d3.select(".infopanel").select("#kind")
-        .text("node name:" + node.ID)
-    d3.select(".infopanel").select('#data')
-        .text("node data:" + node.Protocols)
+
+function buildBarChart(data) {
+    // let delay = 250;
+    let yearStep = 1;
+    let yearMin = d3.min(data, (d) => d.year);//1841 
+    let yearMax = d3.max(data, (d) => d.year);//2019
+    let width = aWidth;
+    let height = aHeight;
+    console.log(aWidth, aHeight)
+    let margin = { top: 20, right: 40, bottom: 30, left: 20 };
+    // console.log('123', Array.from(d3.group(data, (d) => d.age).keys()).sort(d3.ascending))
+    let x = d3
+        .scaleBand()
+        .domain(mm)
+        .range([width - margin.right, margin.left]);//[w - 30, 0]
+
+    // console.log(x(1),x(10),x(20),x(30),x(40),x(50))
+
+    // console.log(Array.from(d3.group(data, (d) => d.age).keys()).sort(d3.ascending))
+    console.log('max value', d3.ticks(...d3.extent(data, (d) => d.age), width / 40))
+    let y = d3
+        .scaleLinear()
+        .domain([0, 3270])
+        .range([height - margin.bottom, margin.top]);
+
+    let color = d3.scaleOrdinal(["M", "F"], ["#4e79a7", "#e15759"]);
+    let xAxis = (g) =>
+        g
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(
+                d3
+                    .axisBottom(x)
+                    // .tickValues(d3.ticks(...d3.extent(data, (d) => d.age), width / 40))
+                    .tickValues([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95])
+                    .tickSizeOuter(0)//
+            )
+            .call((g) =>
+                g
+                    .append("text")
+                    .attr("x", 45)
+                    .attr("y", margin.bottom - 8)
+                    .attr("fill", "currentColor")
+                    .attr("text-anchor", "end")
+                    // .text("← Age")
+                    .text("← Mins")
+            );
+    let yAxis = (g) =>
+        g
+            .attr("transform", `translate(${width - margin.right},0)`)
+            .call(d3.axisRight(y).ticks(null, "s"))
+            .call((g) => g.select(".domain").remove())
+            .call((g) =>
+                g
+                    .append("text")
+                    .attr("x", margin.right)
+                    .attr("y", 10)
+                    .attr("fill", "currentColor")
+                    .attr("text-anchor", "end")
+                    // .text("Population ↑")
+                    .text("TotalIn ↑")
+            );
+    let svg = d3
+        .select(".overviewpanel svg")
+        .attr("viewBox", [0, 0, width, height]);
+    // aWidth aHeight
+    svg.append("g").call(xAxis);
+    svg.append("g").call(yAxis);
+
+    let group = svg.append("g");
+    let rect = group.selectAll("rect");
+    let group2 = svg.append("g")
+    let otherrect = group2.selectAll("rect");
+
+    function update() {
+        let year = +$("#year-slider").val();//选择的年份
+
+        // debugger;    x.step()  该函数返回相邻频段起点之间的距离。
+        const dx = (x.step() * (year - yearMin)) / yearStep;
+
+        const t = svg.transition().ease(d3.easeLinear).duration(100);
+        // debugger;
+        rect = rect
+            .data(
+                data.filter((d) => +d.year === year),
+                (d) => `${d.sex}:${d.year - d.age}`
+            )//                           ???
+            .join(
+                (enter) =>
+                    // console.log('123')
+                    enter
+                        .append("rect")
+                        .style("mix-blend-mode", "darken")
+                        .attr("fill", (d) => color('F'))
+                        .attr("x", (d) => x(d.age) + dx)
+                        .attr("y", (d) => y(0))
+                        .attr("width", x.bandwidth() + 1)
+                        .attr("height", 0),
+                (update) => update,
+                (exit) =>
+                    exit.call((rect) =>
+                        rect.transition(t).remove().attr("y", y(0)).attr("height", 0)
+                    )
+            );
+        //", "#e15759
+        otherrect = otherrect
+            .data(
+                data.filter((d) => +d.year === year),
+                (d) => `${d.sex}:${d.year - d.age}`
+            )//                           ???
+            .join(
+                (enter) =>
+                    // console.log('123')
+                    enter
+                        .append("rect")
+                        .style("mix-blend-mode", "darken")
+                        .attr("fill", (d) => color('M'))
+                        .attr("x", (d) => {
+                            // console.log('123',d)
+                            return x(d.age) + dx + x.step()
+                        })
+                        .attr("y", (d) => y(0))
+                        .attr("width", x.bandwidth() + 1)
+                        .attr("height", 0)
+                ,
+                (update) => update,
+                (exit) =>
+                    exit.call((rect) =>
+                        rect.transition(t).remove().attr("y", y(0)).attr("height", 0)
+                    )
+            );
+        otherrect
+            .transition(t)
+            .attr("y", (d) => y(d.value))
+            .attr("height", (d) => {
+                if (d.age === '0') {
+                    console.log('123', d)
+                    return 0
+                }
+                return y(0) - y(d.value)
+            });
+        rect
+            .append("title")
+            // .text(d => {
+            //   return ""d.
+            //   ${d.sex}${year - d.year + d.age}+d.value
+            // })
+            .html((d) => {
+                return `<span>time:-${d.age}</span><span>Value:${d.value}</span>`
+            });
+        rect
+            .transition(t)
+            .attr("y", (d) => y(d.value))
+            .attr("height", (d) => y(0) - y(d.value));
+
+        group2.transition(t).attr("transform", `translate(${-dx},0)`);
+
+        group.transition(t).attr("transform", `translate(${-dx},0)`);
+    }
+    $("#year-slider").attr("min", yearMin);
+    $("#year-slider").attr("max", yearMax);
+    $("#year-slider").val(yearMax);
+    $("#year-slider").change(update);
 }
 
-function link_infopanel(id) {
-    var link = data_dump[id].Reply.Links
-    var kk = 1
-    for (var k in link) {
-        if (kk <= 3) {
-            d3.select(".infopanel").append('p')
-                .text("link name:" + k)
-            for (var k1 in link[k]) {
-                d3.select(".infopanel").append('p')
-                    .text(k1 + ":" + link[k][k1])
-            }
-        }
-        kk += 1
-    }
-}
-// node_infopanel(0)
-// link_infopanel(0)    
+d3.csv("./data/icelandic-population.csv").then((data) => {
+    // console.log(data);
+    buildBarChart(data);
+});
+

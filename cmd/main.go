@@ -28,7 +28,6 @@ var (
 
 func main() {
 	flag.Parse()
-
 	setLoggerLevel()
 
 	if *masterIP == "" {

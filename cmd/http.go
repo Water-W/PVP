@@ -90,7 +90,7 @@ func myhttp(ctrl *biz.MasterController) {
 	//dump参数设置
 	s := server{ctrl: ctrl}
 	// select {}
-
+	
 	//获取dump的信息
 	http.HandleFunc("/dump", s.dump)
 	http.HandleFunc("/query", s.query)

@@ -1,7 +1,7 @@
 import { generator } from "./modules/generator.js";
 import { generatorTest } from "../test/generatorTest.js";
 
-let mm = ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100","101","102","103","104","105","106","107","108","109"]
+let mm = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105", "106", "107", "108", "109"]
 generatorTest();
 var circleWidth = 5
 const palette = {
@@ -21,27 +21,26 @@ let aHeight = $(".overviewpanel").height();
 function buildBarChart(data) {
   let delay = 250;
   let yearStep = 1;
-  let yearMin = d3.min(data, (d) => d.year);
-  let yearMax = d3.max(data, (d) => d.year);
-  let width = 500;
-  let height = 300;
-  let margin = { top: 20, right: 30, bottom: 34, left: 0 };
+  let yearMin = d3.min(data, (d) => d.year);//1841 
+  let yearMax = d3.max(data, (d) => d.year);//2019
+  let width = aWidth;
+  let height = aHeight;
+  console.log(aWidth, aHeight)
+  let margin = { top: 20, right: 40, bottom: 30, left: 20 };
   // console.log('123', Array.from(d3.group(data, (d) => d.age).keys()).sort(d3.ascending))
   let x = d3
     .scaleBand()
-    .domain(Array.from(d3.group(data, (d) => d.age).keys()).sort(d3.ascending))
-    .range([width - margin.right, margin.left]);
+    .domain(mm)
+    .range([width - margin.right, margin.left]);//[w - 30, 0]
 
   // console.log(x(1),x(10),x(20),x(30),x(40),x(50))
 
-  console.log(Array.from(d3.group(data, (d) => d.age).keys()).sort(d3.ascending))
-
+  // console.log(Array.from(d3.group(data, (d) => d.age).keys()).sort(d3.ascending))
+  console.log('max value', d3.ticks(...d3.extent(data, (d) => d.age), width / 40))
   let y = d3
     .scaleLinear()
-    .domain([0, d3.max(data, (d) => d.value)])
+    .domain([0, 3270])
     .range([height - margin.bottom, margin.top]);
-
-  console.log(y(0),d3.max(data, (d) => d.value))
 
   let color = d3.scaleOrdinal(["M", "F"], ["#4e79a7", "#e15759"]);
   let xAxis = (g) =>
@@ -50,17 +49,19 @@ function buildBarChart(data) {
       .call(
         d3
           .axisBottom(x)
-          .tickValues(d3.ticks(...d3.extent(data, (d) => d.age), width / 40))
-          .tickSizeOuter(0)
+          // .tickValues(d3.ticks(...d3.extent(data, (d) => d.age), width / 40))
+          .tickValues([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95])
+          .tickSizeOuter(0)//
       )
       .call((g) =>
         g
           .append("text")
-          .attr("x", margin.right)
-          .attr("y", margin.bottom - 4)
+          .attr("x", 45)
+          .attr("y", margin.bottom - 8)
           .attr("fill", "currentColor")
           .attr("text-anchor", "end")
-          .text(data.x)
+          // .text("← Age")
+          .text("← Mins")
       );
   let yAxis = (g) =>
     g
@@ -74,7 +75,8 @@ function buildBarChart(data) {
           .attr("y", 10)
           .attr("fill", "currentColor")
           .attr("text-anchor", "end")
-          .text(data.y)
+          // .text("Population ↑")
+          .text("TotalIn ↑")
       );
   let svg = d3
     .select(".overviewpanel svg")
@@ -85,27 +87,29 @@ function buildBarChart(data) {
 
   let group = svg.append("g");
   let rect = group.selectAll("rect");
+  let group2 = svg.append("g")
+  let otherrect = group2.selectAll("rect");
 
   function update() {
     let year = +$("#year-slider").val();//选择的年份
 
-    
-    // debugger;
+    // debugger;    x.step()  该函数返回相邻频段起点之间的距离。
     const dx = (x.step() * (year - yearMin)) / yearStep;
-    console.log('dx',dx)
+
     const t = svg.transition().ease(d3.easeLinear).duration(100);
     // debugger;
     rect = rect
       .data(
         data.filter((d) => +d.year === year),
         (d) => `${d.sex}:${d.year - d.age}`
-      )
+      )//                           ???
       .join(
         (enter) =>
+          // console.log('123')
           enter
             .append("rect")
             .style("mix-blend-mode", "darken")
-            .attr("fill", (d) => color(d.sex))
+            .attr("fill", (d) => color('F'))
             .attr("x", (d) => x(d.age) + dx)
             .attr("y", (d) => y(0))
             .attr("width", x.bandwidth() + 1)
@@ -116,11 +120,58 @@ function buildBarChart(data) {
             rect.transition(t).remove().attr("y", y(0)).attr("height", 0)
           )
       );
-
+    //", "#e15759
+    otherrect = otherrect
+      .data(
+        data.filter((d) => +d.year === year),
+        (d) => `${d.sex}:${d.year - d.age}`
+      )//                           ???
+      .join(
+        (enter) =>
+          // console.log('123')
+          enter
+            .append("rect")
+            .style("mix-blend-mode", "darken")
+            .attr("fill", (d) => color('M'))
+            .attr("x", (d) => {
+              // console.log('123',d)
+              return x(d.age) + dx + x.step()
+            })
+            .attr("y", (d) => y(0))
+            .attr("width", x.bandwidth() + 1)
+            .attr("height", 0)
+        ,
+        (update) => update,
+        (exit) =>
+          exit.call((rect) =>
+            rect.transition(t).remove().attr("y", y(0)).attr("height", 0)
+          )
+      );
+    otherrect
+      .transition(t)
+      .attr("y", (d) => y(d.value))
+      .attr("height", (d) => {
+        if(d.age === '0'){
+          console.log('123',d)
+          return 0
+        }
+        return y(0) - y(d.value)
+      });
+    rect
+      .append("title")
+      // .text(d => {
+      //   return ""d.
+      //   ${d.sex}${year - d.year + d.age}+d.value
+      // })
+      .html((d) => {
+        return `<span>time:-${d.age}</span><span>Value:${d.value}</span>`
+      });
     rect
       .transition(t)
       .attr("y", (d) => y(d.value))
       .attr("height", (d) => y(0) - y(d.value));
+
+    group2.transition(t).attr("transform", `translate(${-dx},0)`);
 
     group.transition(t).attr("transform", `translate(${-dx},0)`);
   }
@@ -134,6 +185,8 @@ d3.csv("./assets/icelandic-population.csv").then((data) => {
   // console.log(data);
   buildBarChart(data);
 });
+
+
 
 let drag = simulation => {
 
