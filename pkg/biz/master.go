@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Water-W/PVP/pkg/log"
 	"github.com/Water-W/PVP/pkg/net"
@@ -71,6 +72,11 @@ type DumpResult struct {
 	Reply *dump.Reply
 }
 
+type DumpResults struct {
+	Results []DumpResult
+	Err     error
+}
+
 func (d DumpResult) String() string {
 	return fmt.Sprintf("{from:%s, Reply:%+v}", d.From, d.Reply)
 }
@@ -90,6 +96,28 @@ func (m *MasterController) Dump(ctx context.Context) ([]DumpResult, error) {
 		}
 	}
 	return out, err
+}
+
+func (m *MasterController) StartPeriodlyDump(interval time.Duration) (resCh <-chan DumpResults, cancel func()) {
+	cctx, cancel := context.WithCancel(context.Background())
+	ch := make(chan DumpResults, 10)
+	go func(ch chan DumpResults, ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				close(ch)
+				return
+			case <-time.After(interval):
+				results, err := m.Dump(ctx)
+				ch <- DumpResults{
+					Results: results,
+					Err:     err,
+				}
+				continue
+			}
+		}
+	}(ch, cctx)
+	return ch, cancel
 }
 
 /*===========================================================================*/
