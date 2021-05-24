@@ -24,7 +24,7 @@ func getclient() influxdb2.Client {
 }
 
 func write_dump(client influxdb2.Client, data []biz.DumpResult) {
-	let thistime = time.Now()
+	thistime := time.Now()
 	writeAPI := client.WriteAPI(org, bucket)
 	for _, v1 := range data {
 		// ipdatafrom := v1.From (数据来源ip)
@@ -72,7 +72,7 @@ func write_dump(client influxdb2.Client, data []biz.DumpResult) {
 					"TotalIn":  links[k]["TotalIn"],
 					"TotalOut": links[k]["TotalOut"],
 				},
-				time.Now())
+				thistime)
 			writeAPI.WritePoint(p)
 		}
 		for k := range protocols {

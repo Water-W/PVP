@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/Water-W/PVP/influxdb"
 	"github.com/Water-W/PVP/pkg/biz"
@@ -14,6 +15,10 @@ var suggestions = []prompt.Suggest{
 	{
 		Text:        "workers",
 		Description: "show worker infos",
+	},
+	{
+		Text:        "startPeriodlyDump",
+		Description: "begin to dump periodly",
 	},
 	{
 		Text:        "storepoint",
@@ -38,12 +43,19 @@ var suggestions = []prompt.Suggest{
 }
 
 func cli(ctrl *biz.MasterController) {
-	mctrl := (*mctrl)(ctrl)
+	mctrl := &mctrl{
+		MasterController: ctrl,
+		cancel:           nil,
+	}
 	c := CLI{
 		cmds: []Cmd{
 			{
 				Pattern: `echo (\S+)`,
 				Action:  mctrl.echo,
+			},
+			{
+				Pattern: "startPeriodlyDump",
+				Action:  mctrl.startPeriodlyDump,
 			},
 			{
 				Pattern: `dump`,
@@ -59,7 +71,7 @@ func cli(ctrl *biz.MasterController) {
 			},
 			{
 				Pattern: "Querydata",
-				Action: mctrl.querydump,
+				Action:  mctrl.querydump,
 			},
 			{
 				Pattern: "exit",
@@ -100,10 +112,13 @@ func (c *CLI) Run() {
 	p.Run()
 }
 
-type mctrl biz.MasterController
+type mctrl struct {
+	*biz.MasterController
+	cancel func()
+}
 
 func (c *mctrl) echo(s []string) {
-	results, err := (*biz.MasterController)(c).Echo(context.Background(), s[1])
+	results, err := c.MasterController.Echo(context.Background(), s[1])
 	if err != nil {
 		log.Error(err)
 		return
@@ -112,7 +127,7 @@ func (c *mctrl) echo(s []string) {
 }
 
 func (c *mctrl) dump(s []string) {
-	results, err := (*biz.MasterController)(c).Dump(context.Background())
+	results, err := c.MasterController.Dump(context.Background())
 	if err != nil {
 		log.Error(err)
 		return
@@ -121,17 +136,36 @@ func (c *mctrl) dump(s []string) {
 }
 
 func (c *mctrl) workers(s []string) {
-	log.Infof("workers:%+v", (*biz.MasterController)(c).WorkerAddrs())
+	log.Infof("workers:%+v", c.MasterController.WorkerAddrs())
 }
 
 func (c *mctrl) storepoint(s []string) {
-	results, err := (*biz.MasterController)(c).Dump(context.Background())
+	results, err := c.MasterController.Dump(context.Background())
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	influxdb.Storedata(results)
 	log.Infof("storepoint: finish")
+}
+func (c *mctrl) startPeriodlyDump(s []string) {
+	ch, cancel := c.MasterController.StartPeriodlyDump(30 * time.Second)
+	c.cancel = cancel
+	go func(ch <-chan biz.DumpResults) {
+		for res := range ch {
+			if res.Err != nil {
+				log.Error(res.Err)
+				continue
+			}
+			log.Debug("results len:%d", len(res.Results))
+			influxdb.Storedata(res.Results)
+		}
+	}(ch)
+}
+
+func (c *mctrl) stopPeriodlyDump(s []string) {
+	c.cancel()
+	c.cancel = nil
 }
 
 func (c *mctrl) querydump(s []string) {
