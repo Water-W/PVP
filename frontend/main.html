@@ -17,26 +17,37 @@
             <div id="graphic">
                 <svg></svg>
             </div>
+
+            <div>
+                <button class="playBtn">开始</button>
+            </div>
+
+            <div class="slide-container">
+                <input type="range" class="slider" min="0" max="10" id="time-slider" />
+                <label for="time-slider">目前时间</label>
+            </div>
+
             <div class="searchBar">
                 <div id="search" class="searchBox">
-                
                     <input id="okk" class="inputBox" placeholder="I will tell you all you want to know!" value="">
                     <button class="searchBtn">搜索</button>
-                    
                 </div>
             </div>
-            
+
         </div>
         <div class="overviewpanel panelbox">
             <div class="slide-container">
                 <input type="range" class="slider" id="year-slider" />
-              </div>
-              <svg></svg>
+                <label for="year-slider">目前时间</label>
+            </div>
+            <div id="graphic2">
+                <svg></svg>
+            </div>
         </div>
         <div class="infopanel panelbox">
         </div>
     </div>
-    
+
     <script type="text/javascript" src="js/jquery.min.js" charset="utf-8"></script>
     <script type="text/javascript" src="js/d3.v6.min.js"></script>
     <script type="text/javascript" src="js/d3-force.min.js"></script>

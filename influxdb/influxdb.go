@@ -2,20 +2,18 @@ package influxdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-
 	"time"
 
 	"github.com/Water-W/PVP/pkg/biz"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/influxdata/influxdb-client-go/v2/api/query"
-	// protocol "github.com/influxdata/line-protocol"
 	// "encoding/json"
 )
 
 // You can generate a Token from the "Tokens Tab" in the UI
-const token = "DviVETfMVeZcyF1gbVhw5ibuac2-3z5vQynr8D50B9p8RQlYr7lc5qPo8lBgtRrP1M5JTNolctbJABi-3W27RQ=="
-const bucket = "bucket1"
+const token = "SEzvFcp4YjFz8zH_FLnnJp3OAhOCZjQj6bKG5wNiyzQgCzqINWUBLM_y1eexPAK-HY1GZOd7ecOJLYn8Nz6DUQ=="
+const bucket = "bucket"
 const org = "pku"
 
 func getclient() influxdb2.Client {
@@ -23,82 +21,147 @@ func getclient() influxdb2.Client {
 	return client
 }
 
+var name2id map[string]int
+var num = 0
+
+type myprotocol struct {
+	Name     string
+	RateIn   float64 `json:"RateIn"`
+	RateOut  float64
+	TotalIn  float64
+	TotalOut float64
+}
+type node struct {
+	Id        int
+	Name      string
+	Target    []int
+	Protocols []myprotocol
+}
+type link struct {
+	Sourceid int
+	Targetid int
+	RateIn   float64
+	RateOut  float64
+	TotalIn  float64
+	TotalOut float64
+}
+type tdMap struct {
+	Nodes []node
+	Links []link
+}
+
+func pushNode(str string) bool {
+	_, ok := name2id[str]
+	if ok {
+		return true
+	} else {
+		name2id[str] = num
+		num += 1
+		return false
+	}
+}
 func write_dump(client influxdb2.Client, data []biz.DumpResult) {
 	thistime := time.Now()
+	thisUnixtime := fmt.Sprintf("%v", thistime.Unix())
 	writeAPI := client.WriteAPI(org, bucket)
-	for _, v1 := range data {
-		// ipdatafrom := v1.From (数据来源ip)
+	defer writeAPI.Flush()
+	//整和成 {nodes, links}存入
 
-		// 断言interface
-		protocols := make(map[string]map[string]float64)
-		nodes := make(map[string]string)
+	name2id = make(map[string]int)
+	num = 0
+	var mytdMap tdMap
+	var nodes []node
+	var links []link
+	// 同一个时刻各个服务器传来消息data[]
+	for _, v1 := range data {
+		// 对于每个服务器的数据
+		// ipdatafrom := v1.From (数据来源ip)
+		// fmt.Print(k1, "\n")
+		// fmt.Print(v1, "\n")
+		// protocols nodename links
+		var myprotocols []myprotocol
+		var mytarget []int
+		mytarget = []int{}
+		nodename := ""
+		var nodeid int
 		for k, v := range v1.Reply.Node.(map[string]interface{}) {
 			if k == "ID" {
-				nodes[k] = v.(string)
+				nodename = v.(string)
 			}
 			if k == "Protocols" {
 				for k1, v1 := range v.(map[string]interface{}) {
-					p := make(map[string]float64)
-					for k2, v2 := range v1.(map[string]interface{}) {
-						p[k2] = v2.(float64)
-					}
-					protocols[k1] = p
+					i := v1.(map[string]interface{})
+					myprotocols = append(myprotocols, myprotocol{
+						Name:     k1,
+						RateIn:   i["RateIn"].(float64),
+						RateOut:  i["RateOut"].(float64),
+						TotalIn:  i["TotalIn"].(float64),
+						TotalOut: i["TotalOut"].(float64),
+					})
 				}
 			}
 		}
-
-		links := make(map[string]map[string]float64)
+		edges := make(map[string]map[string]float64)
 		for k, v := range v1.Reply.Links {
 			m := make(map[string]float64)
 			for k1, v1 := range v.(map[string]interface{}) {
 				m[k1] = v1.(float64)
 			}
-			links[k] = m
+			edges[k] = m
 		}
-		// 最后刷新数据库的写入
-		defer writeAPI.Flush()
-		// 每个link存一条，每个node 存一条，每个protocol存一条。
-		nodename := nodes["ID"]
-		for k := range links {
-			p := influxdb2.NewPoint("dump",
-				map[string]string{
-					"kind": "edge",
-					"from": nodename,
-					"to":   k,
-				},
-				map[string]interface{}{
-					"RateIn":   links[k]["RateIn"],
-					"RateOut":  links[k]["RateOut"],
-					"TotalIn":  links[k]["TotalIn"],
-					"TotalOut": links[k]["TotalOut"],
-				},
-				thistime)
-			writeAPI.WritePoint(p)
+
+		// 先加入本节点
+		if !pushNode(nodename) {
+			nodes = append(nodes, node{
+				Id:        num - 1,
+				Name:      nodename,
+				Protocols: myprotocols,
+			})
+			nodeid = num - 1
+		} else {
+			nodeid = name2id[nodename]
 		}
-		for k := range protocols {
-			ty := "other"
-			name := k
-			if k == "" {
-				ty = "total"
-				name = nodename
+		// links {key{in ,out{float}}}
+		for k2, v2 := range edges {
+			if !pushNode(k2) {
+				nodes = append(nodes, node{
+					Id:   num - 1,
+					Name: nodename,
+				})
 			}
-			p := influxdb2.NewPoint("dump",
-				map[string]string{
-					"kind":     "node",
-					"protocol": ty,
-					"name":     name,
-					"nodename": nodename,
-				},
-				map[string]interface{}{
-					"RateIn":   protocols[k]["RateIn"],
-					"RateOut":  protocols[k]["RateOut"],
-					"TotalIn":  protocols[k]["TotalIn"],
-					"TotalOut": protocols[k]["TotalOut"],
-				},
-				thistime)
-			writeAPI.WritePoint(p)
+			links = append(links, link{
+				Sourceid: nodeid,
+				Targetid: name2id[k2],
+				RateIn:   v2["RateIt"],
+				RateOut:  v2["RateOut"],
+				TotalIn:  v2["TotalIn"],
+				TotalOut: v2["TotalOut"],
+			})
+			mytarget = append(mytarget, name2id[k2])
 		}
+		// fmt.Print(nodeid, "nodeid\n")
+		// fmt.Print(mytarget, "\ntarget\n")
+		nodes[nodeid].Target = mytarget
 	}
+	mytdMap = tdMap{Nodes: nodes, Links: links}
+	j, err := json.Marshal(mytdMap)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	// fmt.Print("json\n")
+	// fmt.Print(string(j))
+	// fmt.Print("\n")
+	p := influxdb2.NewPoint("dump",
+		map[string]string{
+			"kind":     "tdMap",
+			"unixtime": thisUnixtime,
+		},
+		map[string]interface{}{
+			"tdMap": j,
+		},
+		thistime)
+	writeAPI.WritePoint(p)
 }
 
 func Storedata(data []biz.DumpResult) {
@@ -112,36 +175,44 @@ func Storedata(data []biz.DumpResult) {
 	defer client.Close()
 }
 
-func Querydata() ([]*query.FluxRecord, error){
-
+func Querydata() ([]map[string]interface{}, error) {
 	client := getclient()
-	// timestart := "2021-05-11 07:00:00.850"
-	// timestop := "2021-05-11 16:27:01.828"
-	querystring := fmt.Sprintf("from(bucket: \"%v\") |> range(start: -10h) |> filter(fn: (r) => r[\"_measurement\"] == \"dump\")", bucket)
+	querystring := fmt.Sprintf("from(bucket: \"%v\") |> range(start: -5m) |> filter(fn: (r) => r[\"_measurement\"] == \"dump\")", bucket)
 
 	// Get query client
 	queryAPI := client.QueryAPI(org)
 	// get QueryTableResult
+	fmt.Print("开始查\n")
 	result, err := queryAPI.Query(context.Background(), querystring)
-	var records []* query.FluxRecord
+	fmt.Print("结束查\n")
+
+	//查询到的每条记录
+	var records []map[string]interface{}
 	if err == nil {
-		// Iterate over query response
 		// 对于每一条记录进行处理
+
+		// _, ok := map[key]
+		fmt.Print("开始处理\n")
 		for result.Next() {
-			// Notice when group key has changed
-			
-			// if result.TableChanged() {
-				// fmt.Printf("table: %s\n\n", result.TableMetadata().String())
-			// }
-			
-			// Access data
-			// fmt.Printf("value: %v\n\n", result.Record().Values())
-			records = append(records, result.Record())
+			records = append(records, result.Record().Values())
 		}
+		fmt.Print("结束处理\n")
+
+		fmt.Print("\n输出records\n")
+		for kk, vv := range records {
+			fmt.Print(kk)
+			fmt.Print("\n")
+			fmt.Print(vv)
+			fmt.Print("\n")
+
+		}
+		fmt.Print("\n结束\n")
+
 		// check for an error
 		if result.Err() != nil {
 			fmt.Printf("query parsing error: %s\n", result.Err().Error())
 		}
+
 	} else {
 		panic(err)
 	}

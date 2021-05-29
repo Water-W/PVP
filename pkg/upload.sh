@@ -39,3 +39,4 @@ scp -r /home/wangyumin/go/src/PVP/PVP/frontend dev@39.104.205.191:/home/dev/hu
 scp -r /home/wangyumin/go/src/PVP/PVP/frontend dev@39.104.204.231:/home/dev/hu
 scp -r /home/wangyumin/go/src/PVP/PVP/frontend dev@39.104.203.26:/home/dev/hu
 scp -r /home/wangyumin/go/src/PVP/PVP/frontend dev@39.104.207.231:/home/dev/hu
+

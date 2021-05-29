@@ -1,4 +1,6 @@
 // example dump data
+
+
 var data_dump = [
     {
         "From": "127.0.0.1:47720",
@@ -176,10 +178,13 @@ var width = $("#graphic").width(),
     height = $("#graphic").height();
 let forceWidth = width
 let forceHeight = height
-let aWidth = $(".overviewpanel").width();
-let aHeight = $(".overviewpanel").height();
+// let aWidth = document.querySelector('.overviewpanel svg').width();
+let aWidth = $(".overviewpanel #graphic2").width();
+let aHeight = $(".overviewpanel #graphic2").height();
+
 
 console.log('awidth', aWidth)
+console.log('aHeight', aHeight)
 
 const info = document.createElement("div");
 info.setAttribute("class", "info-panel");
@@ -193,6 +198,16 @@ var charge = -45,
     circleWbig = 15,
     strokewidth = 2//正常stroke-width
 
+// Unixtime -> {nodes,links}
+let tdMap = new Map()
+let timeArray
+let newArray
+//现在显示的时间是时间数组中的第几个
+let timeNum = 0
+//unixtime 2 time
+function totime(unixtime) {
+    return new Date(parseInt(unixtime) * 1000).toLocaleString().replace(/:\d{1,2}$/, ' ')
+}
 //颜色
 const palette = {
     lightgray: "#D9DEDE",
@@ -217,35 +232,43 @@ catch (e) {
 
 function geturl() {
     //http://39.104.200.8:18010/dump
-    var url = "http://localhost:18010/dump";
+    var url = "http://39.104.209.15:18010/dump";
     request.open("GET", url, false);
     request.send(null);
-    var netdata1 = request.responseText
-    var netdata = netdata1
+    let netdata1 = request.responseText
+    let netdata2 = netdata1
 
-    netdata = eval("(" + netdata + ")");
-    console.log(netdata)
-    dealdata(netdata)
+    netdata2 = eval("(" + netdata2 + ")");
+    console.log(netdata2)
+    dealdata(netdata2)
 }
 function getquery() {
-    var url = 'http://localhost:18010/query';
+    var url = 'http://39.104.207.76:18010/query';
     var myhttpRequest = new XMLHttpRequest();
     myhttpRequest.open('GET', url, false);//设置你的请求方式
     myhttpRequest.send();
-    var netdata = myhttpRequest.responseText
-    netdata = eval("(" + netdata + ")")
-    console.log("查询获得数据")
-    console.log('123', d3.group(netdata, (d) => d._time))
-    return dealdata(netdata)
+    let netdata = myhttpRequest.responseText
+    netdata = JSON.parse(netdata);
+    console.log("查询获得数据", netdata)
+    if(netdata === null) {
+        console.log("数据为空")
+    }
+    timeArray = Array.from(d3.group(netdata, (d) => d.unixtime).keys()).sort(function (a, b) {
+        return a.unixtime - b.unixtime;
+    })
+    newArray = timeArray.map(totime)
+    timenum = timeArray.length - 1 //当前时间指向
+
+    for (let i = 0;i < netdata.length;i++) {
+        console.log("处理", netdata[i].unixtime)
+        tdMap.set(netdata[i].unixtime, JSON.parse(netdata[i]._value))
+    }
+    console.log('排序时间', timeArray)
+    console.log('排序日期', newArray)
+    console.log('tdMap', tdMap)
+    return true
 }
 
-
-// 数据先拿到一个函数里安装时间分片，然后
-// 把分好片的数据放入dealdata中处理，处理成links和nodes，然后放入展示
-// 同时存放在time -> nodes 、links的映射中
-
-
-// 日期到数据的映射
 var time_data = []
 var map_node = new Map();//节点名字到id映射
 let nodeNum = 0 //
@@ -340,6 +363,7 @@ function dealdata(netdata) {
     }
     return { "nodes": nodes, "links": links }
 }
+
 let ook = getquery()
 console.log(ook)
 
@@ -442,18 +466,23 @@ function overnode(event, node) {
     simulation.force("charge", d3.forceManyBody().strength(strength));
     simulation.restart();
 }
-function buildforce(nodess, linkss) {
 
-    nodes = nodess
-    links = linkss
+function buildforce() {
+    let nn = tdMap.get(timeArray[timenum])
+    nodes = nn.Nodes
+    links = nn.Links
     // links nodes
+    for(let i = 0;i < links.length;i++) {
+        links[i].source = links[i].Sourceid
+        links[i].target = links[i].Targetid
+    }
     simulation = d3.forceSimulation(nodes)
         .force("charge", d3.forceManyBody().strength(-75))
         .force("link", d3.forceLink(links))
         .force("center", d3.forceCenter(forceWidth / 2, forceHeight / 2));
 
     var fdGraph = d3.select('#graphic svg')
-        .attr('viewBox', [0, 0, forceWidth, forceHeight])
+    // .attr('viewBox', [0, 0, forceWidth-200, forceHeight-200])
 
 
     const link = fdGraph.append("g")
@@ -467,14 +496,12 @@ function buildforce(nodess, linkss) {
             // Add classes to lines to identify their from's and to's
 
             // console.log("line",d)
-            var theClass = 'from_' + d.source.id + ' line ';
+            var theClass = 'from_' + d.Sourceid + ' line ';
             if (d.target !== undefined) {
-                theClass += 'to_' + d.target.id
+                theClass += 'to_' + d.Targetid
             }
-            // line_1 line to_2 (ps:这里表示分别属于三个类，line1、line、to_2)
             return theClass
         })
-    // .on('mouseover', console.log)
 
     // Create the SVG circles for the nodes
     function overnode(event, node) {
@@ -485,13 +512,8 @@ function buildforce(nodess, linkss) {
             .attr('stroke', palette.lightgray)
             .attr('stroke-width', 2)
 
-        // Hightlight the nodes that the current node connects to
-        // for (let i = 0; i < node.target.length; i++) {
-        //   d3.select('#node_' + d.target[i]).select('text')
-        //     .attr('font-size', '14')
-        //     .attr('font-weight', 'bold')
-        // }
-        let nodeid = node.id
+        let nodeid = node.Id
+        
         // Node
         // link connect to this node is orange
         // link connect from this node to other is purple
@@ -506,34 +528,35 @@ function buildforce(nodess, linkss) {
                     .attr('r', circleWbig)
             }
         }
-        //高亮我
+
+        //高亮自己
         d3.select("#node_" + nodeid)
             .attr('r', circleWbig)
 
         // Link
-        // Highlight the connections to this node高亮到我的边
+        // 高亮到我的边
         d3.selectAll('.to_' + nodeid)
             .attr('stroke', palette.orange)
             .attr('stroke-width', 3)
-
-        // Highlight the connections from this node高亮从我出去的边
+        // 高亮从我连出去的边
         d3.selectAll('.from_' + nodeid)
             .attr('stroke', palette.purple)
             .attr('stroke-width', 3)
 
-        // When mousing over a node, 
-        // make it more repulsive so it stands out 让他排斥周围的节点而突出
-        // console.log('over', node)
+        // 当鼠标悬停让他排斥周围的节点而突出
         function strength(node2, id) {
             // console.log("node",node,"id",id)
             if (id != nodeid) {
-                // Make the nodes connected to more repulsive
-                for (let i = 0; i < node.target.length; i++) {
-                    if (id === node.target[i]) {
+                console.log("550",node)
+                if(node.Target == undefined) {
+                    return charge * 8
+                }
+                for (let i = 0; i < node.Target.length; i++) {
+                    if (id === node.Target[i]) {
                         return charge * 8
                     }
                 }
-                // Make the nodes connected from more repulsive
+                // 我连到的稍微高亮
                 for (let x = 0; x < links.length; x++) {
                     if (links[x].source === id) {
                         if (links[x].target === nodeid) {
@@ -544,14 +567,14 @@ function buildforce(nodess, linkss) {
                 // 不相关的节点保持原来的样子
                 return charge * 2;
             } else {
-                // Make the selected node more repulsive
+                // 自己高亮
                 return charge * 10;
             }
         }
         simulation.force("charge", d3.forceManyBody().strength(strength));
         simulation.restart();
     }
-    const node = fdGraph.append("g")
+    node = fdGraph.append("g")
         .attr("stroke", "#fff")
         .attr("stroke-width", 1.5)
         .selectAll("circle")
@@ -561,15 +584,8 @@ function buildforce(nodess, linkss) {
         .attr('class', 'node')
         .attr('id', function (d) { return "node_" + d.id })
         .attr('fill', function (d, i) {
-            // Color 1/3 of the nodes each color
-            // Depending on the data, this can be made more meaningful
             // 可以根据节点的压力来改变颜色。
-            if (i < (15 / 3)) {
-                return palette.orange
-            } else if (i < (15 - (15 / 3))) {
-                return palette.purple
-            }
-            return palette.yellowgreen
+            return palette.gray
         })
         .on('mouseover', overnode)
         .on('click', function (event, node) {
@@ -586,7 +602,7 @@ function buildforce(nodess, linkss) {
             console.log(node)
             console.log(nodes[node.id])
             let curdropdown = d3.select('.infopanel').selectAll('.dropdown')
-                .data(nodes[node.id].protocols)
+                .data(tdMap[node.id].Protocols)
                 .enter()
                 .append('div')
                 .attr('class', 'dropdown');
@@ -625,8 +641,8 @@ function buildforce(nodess, linkss) {
     // overnode(null, nodes[34])
 }
 
-buildforce(ook.nodes, ook.links)
-
+buildforce()
+ccc()
 
 $(document).click(function (e) {
     let line_class = $('line');
@@ -634,21 +650,22 @@ $(document).click(function (e) {
     let search = $('.searchBtn');
     if (!line_class.is(e.target) && line_class.has(e.target).length === 0) {
         if (!node_class.is(e.target) && node_class.has(e.target).length === 0) {
-            if(!search.is(e.target) && search.has(e.target).length === 0){
-            d3.selectAll(".line")
-                .attr('stroke', palette.lightgray)
-                .attr('stroke-width', strokewidth)
-            d3.selectAll('.node')
-                .attr('r', circleW)
-            simulation.force("charge", d3.forceManyBody().strength(-75));
-            simulation.restart();
-            console.log("点击空白")
-            // lock_click = 0;
+            if (!search.is(e.target) && search.has(e.target).length === 0) {
+                d3.selectAll(".line")
+                    .attr('stroke', palette.lightgray)
+                    .attr('stroke-width', strokewidth)
+                d3.selectAll('.node')
+                    .attr('r', circleW)
+                simulation.force("charge", d3.forceManyBody().strength(-75));
+                simulation.restart();
+                console.log("点击空白")
+                // lock_click = 0;
             }
         }
     }
 });
 
+// 搜索按钮
 d3.select(".searchBtn")
     .on("click", function (e) {
         let ee = document.getElementById("okk").value;
@@ -658,6 +675,76 @@ d3.select(".searchBtn")
         console.log(nodes[ee])
     })
 
+d3.select("#time-slider")
+    .attr("max", timeArray.length - 1)
+    .attr("min", 1)
+// .attr("max", )
+function ccc() {
+    let num = +$("#time-slider").val()
+    console.log('timenum变了:', num)
+    if (num <= 0 || num >= timeArray.length) {
+        console.log("num<=0num>=length不合法")
+        return
+    }
+    d3
+        .selectAll("circle")
+        .data(nodes)
+        .attr('fill', function (d, i) {
+            // Color 1/3 of the nodes each color
+            // Depending on the data, this can be made more meaningful
+            // console.log(tdMap.get(timeArray[num-1]))
+            let pastd = tdMap.get(timeArray[num-1]).nodes[d.id]
+            let newd = tdMap.get(timeArray[num]).nodes[d.id]
+            let pastvalue1 = pastd.TotalIn
+            let pastvalue2 = pastd.TotalOut
+            let nowvalue1 = newd.TotalIn
+            let nowvalue2 = newd.TotalOut
+            // 可以根据节点的压力来改变颜色。
+            // 用id找就ok
+            console.log(d.id)
+            console.log("TotalIn",pastvalue1,nowvalue1)
+            console.log("TotalOut",pastvalue2,nowvalue2)
+            // console.log("TotalIn")
+            // console.log("TotalIn")
+            if(nowvalue2 - pastvalue2 > 0) {
+                return palette.orange
+            }
+            if(nowvalue1 - pastvalue1 > 0) {
+                return palette.purple
+            }
+            return palette.gray
+        })
+}
+$("#time-slider").change(ccc);
+// 播放按钮
+let pop = 0 // 目前是暂停
+let playbt = d3.select(".playBtn")
+let intt
+let vv
+function clock() {
+    vv = +$("#time-slider").val()
+    console.log("value=", vv)
+    if (vv === timeArray.length) {
+        console.log("panduan")
+    } else {
+        d3.select("#time-slider")
+            .property("value", vv + 1)
+    }
+}
+d3.select(".playBtn")
+    .on("click", function (e) {
+        vv = +$("#time-slider").val()
+        if (pop === 0) {
+            playbt.text("按下暂停")
+            intt = setInterval(clock, 1200);
+            pop = 1
+        }
+        else {
+            playbt.text("按下播放")
+            clearInterval(intt)
+            pop = 0
+        }
+    })
 
 
 function buildBarChart(data) {
@@ -667,7 +754,7 @@ function buildBarChart(data) {
     let yearMax = d3.max(data, (d) => d.year);//2019
     let width = aWidth;
     let height = aHeight;
-    console.log(aWidth, aHeight)
+    // console.log(aWidth, aHeight)
     let margin = { top: 20, right: 40, bottom: 30, left: 20 };
     // console.log('123', Array.from(d3.group(data, (d) => d.age).keys()).sort(d3.ascending))
     let x = d3
@@ -678,7 +765,7 @@ function buildBarChart(data) {
     // console.log(x(1),x(10),x(20),x(30),x(40),x(50))
 
     // console.log(Array.from(d3.group(data, (d) => d.age).keys()).sort(d3.ascending))
-    console.log('max value', d3.ticks(...d3.extent(data, (d) => d.age), width / 40))
+    // console.log('max value', d3.ticks(...d3.extent(data, (d) => d.age), width / 40))
     let y = d3
         .scaleLinear()
         .domain([0, 3270])
@@ -722,7 +809,7 @@ function buildBarChart(data) {
             );
     let svg = d3
         .select(".overviewpanel svg")
-        .attr("viewBox", [0, 0, width, height]);
+    // .attr("viewBox", [0, 0, width, height]);
     // aWidth aHeight
     svg.append("g").call(xAxis);
     svg.append("g").call(yAxis);
@@ -747,7 +834,6 @@ function buildBarChart(data) {
             )//                           ???
             .join(
                 (enter) =>
-                    // console.log('123')
                     enter
                         .append("rect")
                         .style("mix-blend-mode", "darken")
@@ -770,7 +856,6 @@ function buildBarChart(data) {
             )//                           ???
             .join(
                 (enter) =>
-                    // console.log('123')
                     enter
                         .append("rect")
                         .style("mix-blend-mode", "darken")
@@ -794,17 +879,12 @@ function buildBarChart(data) {
             .attr("y", (d) => y(d.value))
             .attr("height", (d) => {
                 if (d.age === '0') {
-                    console.log('123', d)
                     return 0
                 }
                 return y(0) - y(d.value)
             });
         rect
             .append("title")
-            // .text(d => {
-            //   return ""d.
-            //   ${d.sex}${year - d.year + d.age}+d.value
-            // })
             .html((d) => {
                 return `<span>time:-${d.age}</span><span>Value:${d.value}</span>`
             });
@@ -824,7 +904,6 @@ function buildBarChart(data) {
 }
 
 d3.csv("./data/icelandic-population.csv").then((data) => {
-    // console.log(data);
     buildBarChart(data);
 });
 
